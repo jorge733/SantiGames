@@ -2,7 +2,7 @@
 // estado: 'disponible' o 'desarrollo'. Solo un juego debería tener destacado: true.
 window.SANTIGAMES = {
   // Escribe aquí el correo público del estudio para que aparezca en la página "El estudio".
-  contacto: '',
+  contacto: 'sabenedettoa@benedettowebs.cl',
   juegos: [
     {
       titulo: 'Cielo Abierto',
