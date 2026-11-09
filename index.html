@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SantiGames</title>
+  <meta name="description" content="SantiGames es un estudio independiente de videojuegos creados por Santi con Claude Code.">
+  <link rel="icon" href="assets/icono.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Nunito:wght@400;700;800&display=swap">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="marca" href="index.html"><img src="assets/icono.svg" alt=""><span>Santi<span>Games</span></span></a>
+      <nav aria-label="Principal">
+        <a href="#juegos">Juegos</a>
+        <a href="estudio.html">El estudio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="heroe">
+      <img src="assets/hero.svg" alt="">
+      <div class="contenedor"><div class="panel" id="destacado"></div></div>
+    </section>
+
+    <section class="seccion" id="juegos">
+      <div class="contenedor">
+        <h2>Nuestros juegos</h2>
+        <p class="intro">Juegos independientes para jugar desde el navegador, sin instalar nada.</p>
+        <div class="rejilla" id="catalogo"></div>
+      </div>
+    </section>
+
+    <section class="seccion banda">
+      <div class="contenedor">
+        <h2>Hechos por Santi, con Claude Code</h2>
+        <p class="intro">SantiGames es un estudio de una persona con muchas ideas. Cada juego nace de una conversación y se construye junto a Claude Code.</p>
+        <a class="boton" href="estudio.html">Conoce el estudio</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor"><p>SantiGames</p><p>Hecho con Claude Code</p></div>
+  </footer>
+
+  <script src="datos/juegos.js"></script>
+  <script src="js/sitio.js"></script>
+</body>
+</html>

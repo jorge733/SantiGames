@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cielo Abierto · SantiGames</title>
+  <link rel="icon" href="../../assets/icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="juego.css">
+</head>
+<body>
+  <canvas id="escena" tabindex="0" aria-label="Vista 3D del vuelo"></canvas>
+
+  <div id="hud" hidden>
+    <div class="tarjeta-objetivo">
+      <p id="objetivo"></p>
+      <p id="ruta"></p>
+      <p id="consejo"></p>
+    </div>
+    <div id="alertas" role="status"></div>
+    <div id="aviso" role="status"></div>
+    <canvas id="panel" aria-label="Instrumentos de vuelo"></canvas>
+  </div>
+
+  <section id="menu" class="pantalla" hidden>
+    <div class="caja ancha">
+      <a class="volver" href="index.html">← Volver a la ficha del juego</a>
+      <h1>Cielo Abierto</h1>
+      <p class="sub">Elige una misión</p>
+      <p id="aviso-tactil" class="tactil" hidden>Este simulador necesita teclado. Ábrelo en un ordenador para pilotar.</p>
+      <div id="misiones"></div>
+      <div class="teclas">
+        <span><kbd>W</kbd><kbd>S</kbd> Morro abajo / arriba</span>
+        <span><kbd>A</kbd><kbd>D</kbd> Alabear</span>
+        <span><kbd>Q</kbd><kbd>E</kbd> Timón y rueda de morro</span>
+        <span><kbd>R</kbd><kbd>F</kbd> Más / menos gas</span>
+        <span><kbd>X</kbd><kbd>Z</kbd> Bajar / subir flaps</span>
+        <span><kbd>T</kbd><kbd>G</kbd> Compensador</span>
+        <span><kbd>Espacio</kbd> Frenos</span>
+        <span><kbd>C</kbd> Cámara</span>
+        <span><kbd>P</kbd> Pausa</span>
+        <span><kbd>M</kbd> Sonido</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="pausa" class="pantalla" hidden>
+    <div class="caja">
+      <h2>Pausa</h2>
+      <button id="b-seguir" class="principal">Seguir volando</button>
+      <button id="b-reiniciar">Reiniciar misión</button>
+      <button id="b-menu">Elegir otra misión</button>
+    </div>
+  </section>
+
+  <section id="fin" class="pantalla" hidden>
+    <div class="caja">
+      <h2 id="fin-titulo"></h2>
+      <p id="fin-estrellas" class="estrellas-grandes"></p>
+      <p id="fin-detalle"></p>
+      <button id="b-reintentar" class="principal">Volver a intentarlo</button>
+      <button id="b-menu-fin">Elegir otra misión</button>
+    </div>
+  </section>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="js/terreno.js"></script>
+  <script src="js/fisica.js"></script>
+  <script src="js/mundo.js"></script>
+  <script src="js/instrumentos.js"></script>
+  <script src="js/misiones.js"></script>
+  <script src="js/juego.js"></script>
+</body>
+</html>

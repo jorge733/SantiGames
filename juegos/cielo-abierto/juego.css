@@ -1,0 +1,44 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; color: #f5f1e6; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+[hidden] { display: none !important; }
+#escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; --alto-panel: 150px; }
+#panel { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; }
+.tarjeta-objetivo { position: absolute; top: 14px; left: 14px; max-width: min(430px, calc(100vw - 28px)); padding: 11px 15px; background: rgba(31, 42, 68, 0.84); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+.tarjeta-objetivo p { margin: 0; }
+#objetivo { font-weight: 700; font-size: 16px; color: #f7c35f; }
+#ruta { font-size: 13px; margin-top: 3px !important; font-variant-numeric: tabular-nums; }
+#consejo { font-size: 12.5px; margin-top: 5px !important; color: #b9c6dc; }
+#alertas { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 22px; letter-spacing: 0.06em; color: #ff5b5b; text-shadow: 0 2px 0 #3a1520; white-space: nowrap; }
+#aviso { position: absolute; left: 50%; bottom: calc(var(--alto-panel) + 18px); transform: translateX(-50%); padding: 7px 16px; background: rgba(31, 42, 68, 0.9); font-size: 14px; opacity: 0; transition: opacity 0.25s; }
+#aviso.visible { opacity: 1; }
+
+.pantalla { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(20, 30, 54, 0.45); overflow-y: auto; }
+.caja { width: min(400px, 100%); padding: 26px; background: #1f2a44; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.caja.ancha { width: min(860px, 100%); }
+.caja h1 { margin: 6px 0 0; font-size: 38px; color: #f7c35f; }
+.caja h2 { margin: 0 0 10px; font-size: 26px; color: #f7c35f; }
+.sub { margin: 0 0 14px; color: #b9c6dc; }
+.volver { color: #86d3ef; font-size: 14px; text-decoration: none; }
+.volver:hover { text-decoration: underline; }
+.tactil { padding: 10px 12px; background: #5c2a35; }
+#misiones { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; }
+button:focus-visible, a:focus-visible { outline: 3px solid #86d3ef; outline-offset: 2px; }
+.mision { position: relative; text-align: left; padding: 13px 14px; background: #2b3a5c; transition: background 0.15s, transform 0.15s; }
+.mision:hover { background: #3a4d78; transform: translateY(-2px); }
+.mision strong { display: block; font-size: 16px; padding-right: 58px; }
+.mision .nivel { font-size: 12px; color: #f7c35f; }
+.mision p { margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: #cdd7e8; }
+.mision .estrellas { position: absolute; top: 13px; right: 12px; color: #f7c35f; font-size: 14px; }
+.teclas { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; font-size: 13px; color: #cdd7e8; }
+kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 3px; text-align: center; font: inherit; font-weight: 700; background: #3a4d78; color: #fff; }
+.caja > button { display: block; width: 100%; margin-top: 9px; padding: 11px; background: #2b3a5c; }
+.caja > button:hover { background: #3a4d78; }
+.caja > button.principal { background: #ff7a45; color: #2a1208; font-weight: 700; }
+.caja > button.principal:hover { background: #ff9365; }
+.estrellas-grandes { margin: 0 0 6px; font-size: 34px; color: #f7c35f; }
+#fin-detalle { line-height: 1.5; }
+
+@media (prefers-reduced-motion: reduce) { .mision { transition: none; } }

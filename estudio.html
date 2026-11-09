@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>El estudio · SantiGames</title>
+  <meta name="description" content="Quién hace SantiGames y cómo se crean sus videojuegos.">
+  <link rel="icon" href="assets/icono.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Nunito:wght@400;700;800&display=swap">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="contenedor">
+      <a class="marca" href="index.html"><img src="assets/icono.svg" alt=""><span>Santi<span>Games</span></span></a>
+      <nav aria-label="Principal">
+        <a href="index.html#juegos">Juegos</a>
+        <a href="estudio.html" aria-current="page">El estudio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="cabeza-pagina">
+      <div class="contenedor">
+        <h1>El estudio</h1>
+        <p>SantiGames es un estudio independiente de videojuegos fundado por Santi.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor columnas">
+        <div>
+          <h2>Cómo hacemos los juegos</h2>
+          <p>Santi pone las ideas, las decisiones y el criterio de qué es divertido. Claude Code ayuda a convertirlo en un juego que funciona, probando y ajustando cada parte.</p>
+          <ul class="lista">
+            <li><strong>Se juegan al momento.</strong> Todo funciona en el navegador, sin descargas.</li>
+            <li><strong>Con identidad propia.</strong> Ideas y mundos originales de SantiGames.</li>
+            <li><strong>En evolución.</strong> Cada juego nuevo se suma al catálogo.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Contacto</h2>
+          <p id="contacto-dato"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor"><p>SantiGames</p><p>Hecho con Claude Code</p></div>
+  </footer>
+
+  <script src="datos/juegos.js"></script>
+  <script src="js/sitio.js"></script>
+</body>
+</html>
