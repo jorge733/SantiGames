@@ -1,7 +1,7 @@
 // Service worker de Cielo Abierto: guarda el juego para poder jugar sin conexión.
 // Con conexión siempre se pide la versión nueva (y se guarda); sin conexión se usa la guardada.
 // Al publicar cambios grandes, sube VERSION para limpiar lo guardado antes.
-const VERSION = 'cielo-abierto-v2';
+const VERSION = 'cielo-abierto-v3';
 const ARCHIVOS = [
   './jugar.html', './index.html', './juego.css', './manifest.webmanifest', './portada.svg',
   './vendor/three.min.js',

@@ -11,6 +11,10 @@
   const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, logarithmicDepthBuffer: true });
   render.setPixelRatio(Math.min(window.devicePixelRatio, tactil ? 1.5 : 2));
   render.shadowMap.enabled = true;
+  render.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Respuesta de color de cine (ACES): luces suaves y sombras con matiz, más cerca de una foto real.
+  render.toneMapping = THREE.ACESFilmicToneMapping;
+  render.toneMappingExposure = 1.05;
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(62, 1, 0.3, 45000);
   const mundo3d = window.Mundo.crear(escena);
@@ -775,7 +779,7 @@
     } else {
       let cerca = T.AEROPUERTOS[0];
       for (const a of T.AEROPUERTOS) if (Math.hypot(a.x - e.p[0], a.z - e.p[2]) < Math.hypot(cerca.x - e.p[0], cerca.z - e.p[2])) cerca = a;
-      camara.position.set(cerca.x + 93, cerca.y + 33, cerca.z + 10);
+      camara.position.set(cerca.x + cerca.mitadAncho + 272, cerca.y + 37, cerca.z + 30); // desde la torre de control
       camara.up.set(0, 1, 0);
       camara.fov = Math.max(6, Math.min(62, (2400 / Math.max(40, camara.position.distanceTo(vP))) * 8));
       camara.lookAt(vP);

@@ -2,22 +2,42 @@
 (function () {
   'use strict';
   const TAU = Math.PI * 2;
-  const COL = { panel: '#1f2a44', bisel: '#33415f', cara: '#10182b', texto: '#f5f1e6', suave: '#9fb0cc', coral: '#ff7a45', oro: '#f7c35f', verde: '#6fd27a', rojo: '#ff5151', cielo: '#3f9fe0', suelo: '#a9713f' };
+  const COL = { panel: '#1b2028', bisel: '#33415f', cara: '#0b0f17', texto: '#f5f1e6', suave: '#9fb0cc', coral: '#ff7a45', oro: '#f7c35f', verde: '#6fd27a', rojo: '#ff5151', cielo: '#3f9fe0', suelo: '#a9713f' };
 
-  function octogono(x, cx, cy, r) {
-    x.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const a = Math.PI / 8 + (i * TAU) / 8;
-      x[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+  // Esfera de reloj de avión: bisel metálico con tornillos, fondo negro mate y luego (en cristal()) el reflejo del vidrio.
+  function esfera(x, cx, cy, r) {
+    const R = r * 1.06;
+    x.save();
+    x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = r * 0.18; x.shadowOffsetY = r * 0.05;
+    x.beginPath(); x.arc(cx, cy, R, 0, TAU);
+    const bisel = x.createLinearGradient(cx, cy - R, cx, cy + R);
+    bisel.addColorStop(0, '#5d6678'); bisel.addColorStop(0.5, '#2a3140'); bisel.addColorStop(1, '#151a24');
+    x.fillStyle = bisel; x.fill();
+    x.restore();
+    x.beginPath(); x.arc(cx, cy, r * 0.97, 0, TAU);
+    x.fillStyle = '#0b0f17'; x.fill();
+    x.beginPath(); x.arc(cx, cy, r * 0.92, 0, TAU);
+    const cara = x.createRadialGradient(cx, cy - r * 0.2, r * 0.1, cx, cy, r * 0.92);
+    cara.addColorStop(0, '#1b2230'); cara.addColorStop(1, '#0c1018');
+    x.fillStyle = cara; x.fill();
+    // Tornillos del bisel.
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + (i * Math.PI) / 2, tx = cx + Math.cos(a) * R * 1.02, ty = cy + Math.sin(a) * R * 1.02;
+      if (Math.abs(Math.cos(a) * R * 1.02) > r * 1.2) continue;
+      x.beginPath(); x.arc(tx, ty, r * 0.045, 0, TAU);
+      x.fillStyle = '#8a93a5'; x.fill();
     }
-    x.closePath();
   }
 
-  function esfera(x, cx, cy, r) {
-    octogono(x, cx, cy, r * 1.06);
-    x.fillStyle = COL.bisel; x.fill();
+  function cristal(x, cx, cy, r) {
+    x.save();
+    x.beginPath(); x.arc(cx, cy, r * 0.92, 0, TAU); x.clip();
+    const brillo = x.createLinearGradient(cx - r, cy - r, cx + r * 0.2, cy + r * 0.3);
+    brillo.addColorStop(0, 'rgba(255,255,255,0.13)'); brillo.addColorStop(0.45, 'rgba(255,255,255,0.03)'); brillo.addColorStop(0.46, 'rgba(255,255,255,0)');
+    x.fillStyle = brillo; x.fillRect(cx - r, cy - r, r * 2, r * 2);
+    x.restore();
     x.beginPath(); x.arc(cx, cy, r * 0.92, 0, TAU);
-    x.fillStyle = COL.cara; x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = Math.max(1, r * 0.03); x.stroke();
   }
 
   function rotulo(x, t, cx, cy, tam, col) {
@@ -27,10 +47,25 @@
     x.fillText(t, cx, cy);
   }
 
+  // Ventanita con la lectura digital, dibujada encima de las agujas para que siempre se lea.
+  function lectura(x, texto, cx, cy, tam, col) {
+    x.font = `700 ${Math.round(tam)}px system-ui, sans-serif`;
+    const w = x.measureText(texto).width + tam * 0.7, h = tam * 1.35;
+    x.beginPath(); rectRedondo(x, cx - w / 2, cy - h / 2, w, h, tam * 0.3);
+    x.fillStyle = 'rgba(5,8,13,0.92)'; x.fill();
+    x.strokeStyle = 'rgba(255,255,255,0.14)'; x.lineWidth = 1; x.stroke();
+    x.fillStyle = col || COL.oro; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(texto, cx, cy + tam * 0.04);
+  }
+
   function aguja(x, cx, cy, ang, largo, ancho, col) {
     x.save(); x.translate(cx, cy); x.rotate(ang);
-    x.beginPath(); x.moveTo(-ancho, 0); x.lineTo(0, -largo); x.lineTo(ancho, 0); x.lineTo(0, largo * 0.14); x.closePath();
-    x.fillStyle = col || COL.texto; x.fill(); x.restore();
+    x.shadowColor = 'rgba(0,0,0,0.6)'; x.shadowBlur = ancho * 1.5; x.shadowOffsetX = ancho * 0.4; x.shadowOffsetY = ancho * 0.6;
+    x.beginPath(); x.moveTo(-ancho, 0); x.lineTo(-ancho * 0.35, -largo); x.lineTo(ancho * 0.35, -largo); x.lineTo(ancho, 0); x.lineTo(0, largo * 0.16); x.closePath();
+    x.fillStyle = col || COL.texto; x.fill();
+    x.shadowColor = 'transparent';
+    x.beginPath(); x.arc(0, 0, ancho * 1.3, 0, TAU); x.fillStyle = '#2a3140'; x.fill();
+    x.restore();
   }
 
   function marcas(x, cx, cy, r, ini, fin, n, cadaLargo) {
@@ -62,8 +97,9 @@
       rotulo(x, String(v), cx + Math.cos(a) * r * 0.56, cy + Math.sin(a) * r * 0.56, r * 0.17);
     }
     rotulo(x, 'NUDOS', cx, cy + r * 0.3, r * 0.13, COL.suave);
-    rotulo(x, String(Math.round(t.nudos)), cx, cy + r * 0.55, r * 0.26, COL.oro);
     aguja(x, cx, cy, K(t.nudos), r * 0.78, r * 0.05);
+    lectura(x, String(Math.round(t.nudos)), cx, cy + r * 0.56, r * 0.22);
+    cristal(x, cx, cy, r);
   }
 
   function actitud(x, cx, cy, r, t) {
@@ -72,8 +108,10 @@
     x.beginPath(); x.arc(cx, cy, r * 0.88, 0, TAU); x.clip();
     x.translate(cx, cy); x.rotate(-t.alabeo);
     const esc = r * 0.03, dy = ((t.cabeceo * 180) / Math.PI) * esc;
-    x.fillStyle = COL.cielo; x.fillRect(-r * 2, -r * 3 + dy, r * 4, r * 3);
-    x.fillStyle = COL.suelo; x.fillRect(-r * 2, dy, r * 4, r * 3);
+    const gc = x.createLinearGradient(0, dy - r * 1.4, 0, dy); gc.addColorStop(0, '#1f5fa8'); gc.addColorStop(1, '#5aa6e6');
+    x.fillStyle = gc; x.fillRect(-r * 2, -r * 3 + dy, r * 4, r * 3);
+    const gs = x.createLinearGradient(0, dy, 0, dy + r * 1.4); gs.addColorStop(0, '#9a6a3c'); gs.addColorStop(1, '#5a3a20');
+    x.fillStyle = gs; x.fillRect(-r * 2, dy, r * 4, r * 3);
     x.strokeStyle = COL.texto; x.lineWidth = 2;
     x.beginPath(); x.moveTo(-r * 2, dy); x.lineTo(r * 2, dy); x.stroke();
     x.lineWidth = 1.2;
@@ -89,6 +127,7 @@
     x.moveTo(cx + r * 0.5, cy); x.lineTo(cx + r * 0.16, cy); x.lineTo(cx + r * 0.08, cy + r * 0.1);
     x.stroke();
     x.beginPath(); x.arc(cx, cy, 3, 0, TAU); x.fillStyle = COL.oro; x.fill();
+    cristal(x, cx, cy, r);
   }
 
   function altimetro(x, cx, cy, r, t) {
@@ -98,9 +137,10 @@
       const a = (i / 10) * TAU - Math.PI / 2;
       rotulo(x, String(i), cx + Math.cos(a) * r * 0.56, cy + Math.sin(a) * r * 0.56, r * 0.18);
     }
-    rotulo(x, Math.round(t.pies).toLocaleString('es-ES') + ' ft', cx, cy + r * 0.34, r * 0.17, COL.oro);
     aguja(x, cx, cy, (t.pies / 10000) * TAU, r * 0.5, r * 0.08, COL.coral);
     aguja(x, cx, cy, (t.pies / 1000) * TAU, r * 0.8, r * 0.05);
+    lectura(x, Math.round(t.pies).toLocaleString('es-ES') + ' ft', cx, cy + r * 0.36, r * 0.16);
+    cristal(x, cx, cy, r);
   }
 
   function variometro(x, cx, cy, r, t) {
@@ -111,8 +151,9 @@
       rotulo(x, String(Math.abs(f) / 100), cx + Math.cos(a) * r * 0.58, cy + Math.sin(a) * r * 0.58, r * 0.17);
     }
     rotulo(x, 'PIES/MIN', cx - r * 0.06, cy - r * 0.2, r * 0.11, COL.suave);
-    rotulo(x, (t.fpm > 0 ? '+' : '') + Math.round(t.fpm / 10) * 10, cx + r * 0.14, cy + r * 0.3, r * 0.19, COL.oro);
     aguja(x, cx, cy, K(t.fpm), r * 0.78, r * 0.05);
+    lectura(x, (t.fpm > 0 ? '+' : '') + Math.round(t.fpm / 10) * 10, cx + r * 0.1, cy + r * 0.34, r * 0.17);
+    cristal(x, cx, cy, r);
   }
 
   function rumbo(x, cx, cy, r, t, objetivo) {
@@ -135,23 +176,42 @@
     x.restore();
     x.beginPath(); x.moveTo(cx, cy - r * 0.32); x.lineTo(cx - r * 0.18, cy + r * 0.2); x.lineTo(cx, cy + r * 0.1); x.lineTo(cx + r * 0.18, cy + r * 0.2); x.closePath();
     x.fillStyle = COL.oro; x.fill();
-    rotulo(x, String(Math.round(t.rumbo) % 360).padStart(3, '0') + '°', cx, cy + r * 0.48, r * 0.18);
+    lectura(x, String(Math.round(t.rumbo) % 360).padStart(3, '0') + '°', cx, cy + r * 0.5, r * 0.16, COL.texto);
+    cristal(x, cx, cy, r);
   }
 
+  // roundRect no existe en navegadores algo antiguos (Safari 15): entonces, rectángulo normal.
+  function rectRedondo(x, a, b, w, h, r) { if (x.roundRect) x.roundRect(a, b, w, h, Math.min(r, h / 2)); else x.rect(a, b, w, h); }
+
   function barra(x, bx, by, ancho, alto, valor, col, etiqueta, texto, tam) {
-    rotulo(x, etiqueta, bx + ancho / 2, by - tam * 0.8, tam, COL.suave);
-    x.fillStyle = COL.cara; x.fillRect(bx, by, ancho, alto);
-    const h = alto * Math.max(0, Math.min(1, valor));
-    x.fillStyle = col; x.fillRect(bx, by + alto - h, ancho, h);
+    rotulo(x, etiqueta, bx + ancho / 2, by - tam * 0.85, tam * 0.92, COL.suave);
+    const rad = Math.min(ancho / 2, 6);
+    x.beginPath(); rectRedondo(x, bx, by, ancho, alto, rad);
+    x.fillStyle = '#0b0f17'; x.fill();
+    x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 1; x.stroke();
+    const h = Math.max(0, (alto - 4) * Math.max(0, Math.min(1, valor)));
+    if (h > 0) {
+      x.save();
+      x.beginPath(); rectRedondo(x, bx + 2, by + alto - 2 - h, ancho - 4, h, Math.max(1, rad - 2)); x.clip();
+      const gr = x.createLinearGradient(bx, 0, bx + ancho, 0);
+      gr.addColorStop(0, col); gr.addColorStop(0.5, col); gr.addColorStop(1, 'rgba(0,0,0,0.25)');
+      x.fillStyle = gr; x.fillRect(bx, by, ancho, alto);
+      x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(bx + 2, by + alto - 2 - h, (ancho - 4) * 0.35, h);
+      x.restore();
+    }
     rotulo(x, texto, bx + ancho / 2, by + alto + tam * 0.95, tam, COL.texto);
   }
 
   function dibujar(x, ancho, alto, t, e, mando, objetivo) {
     x.clearRect(0, 0, ancho, alto);
-    x.fillStyle = COL.panel;
+    // Panel de cabina: chapa gris antracita con un filo superior iluminado.
+    const fondo = x.createLinearGradient(0, 0, 0, alto);
+    fondo.addColorStop(0, '#2b313c'); fondo.addColorStop(0.08, '#20252e'); fondo.addColorStop(1, '#14181f');
+    x.fillStyle = fondo;
     x.beginPath();
-    x.moveTo(0, alto); x.lineTo(0, 16); x.lineTo(16, 0); x.lineTo(ancho - 16, 0); x.lineTo(ancho, 16); x.lineTo(ancho, alto); x.closePath();
+    x.moveTo(0, alto); x.lineTo(0, 14); x.quadraticCurveTo(0, 0, 14, 0); x.lineTo(ancho - 14, 0); x.quadraticCurveTo(ancho, 0, ancho, 14); x.lineTo(ancho, alto); x.closePath();
     x.fill();
+    x.fillStyle = 'rgba(255,255,255,0.10)'; x.fillRect(14, 0, ancho - 28, 1);
     const pasoG = Math.min(alto * 1.02, ancho / 7.4);
     const r = pasoG * 0.44, cy = alto / 2;
     const totalG = pasoG * 5 + pasoG * 1.75;

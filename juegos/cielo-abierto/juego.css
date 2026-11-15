@@ -1,73 +1,85 @@
+/* Cielo Abierto: interfaz de vidrio esmerilado sobre la escena 3D. */
+:root {
+  --fondo: #0f1724; --vidrio: rgba(16, 24, 38, 0.62); --vidrio-fuerte: rgba(14, 21, 34, 0.86); --borde: rgba(255, 255, 255, 0.12);
+  --tarjeta: rgba(255, 255, 255, 0.06); --tarjeta-hover: rgba(255, 255, 255, 0.11);
+  --texto: #eef2f8; --suave: #a7b3c6; --oro: #f7c35f; --coral: #ff7a45; --cielo: #86d3ef; --rojo: #ff5b5b; --verde: #6fd27a;
+  --radio: 16px; --radio-chico: 10px;
+}
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; color: #f5f1e6; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--fondo); color: var(--texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
 [hidden] { display: none !important; }
 #escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
 
 #hud { position: fixed; inset: 0; pointer-events: none; --alto-panel: 150px; }
-#panel { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; }
-.tarjeta-objetivo { position: absolute; top: 14px; left: 14px; max-width: min(430px, calc(100vw - 28px)); padding: 11px 15px; background: rgba(31, 42, 68, 0.84); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+#panel { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; filter: drop-shadow(0 -6px 14px rgba(0, 0, 0, 0.35)); }
+.tarjeta-objetivo { position: absolute; top: 14px; left: 14px; max-width: min(430px, calc(100vw - 28px)); padding: 11px 15px 12px; background: var(--vidrio); border: 1px solid var(--borde); border-radius: var(--radio); -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
 .tarjeta-objetivo p { margin: 0; }
-#objetivo { font-weight: 700; font-size: 16px; color: #f7c35f; }
-#ruta { font-size: 13px; margin-top: 3px !important; font-variant-numeric: tabular-nums; }
+#objetivo { font-weight: 700; font-size: 16px; color: var(--oro); letter-spacing: 0.01em; }
+#ruta { font-size: 13px; margin-top: 4px !important; font-variant-numeric: tabular-nums; }
 #pasajeros { font-size: 13px; margin-top: 3px !important; font-variant-numeric: tabular-nums; }
-#consejo { font-size: 12.5px; margin-top: 5px !important; color: #b9c6dc; }
-#alertas { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 22px; letter-spacing: 0.06em; color: #ff5b5b; text-shadow: 0 2px 0 #3a1520; white-space: nowrap; }
-#aviso { position: absolute; left: 50%; bottom: calc(var(--alto-panel) + 18px); transform: translateX(-50%); padding: 7px 16px; background: rgba(31, 42, 68, 0.9); font-size: 14px; opacity: 0; transition: opacity 0.25s; }
-#aviso.visible { opacity: 1; }
+#pasajeros:empty, #ruta:empty, #consejo:empty { display: none; }
+#consejo { font-size: 12.5px; margin-top: 7px !important; padding-top: 7px; border-top: 1px solid var(--borde); color: var(--suave); line-height: 1.4; }
+#alertas { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 18px; letter-spacing: 0.08em; color: #fff; white-space: nowrap; }
+#alertas:not(:empty) { padding: 6px 16px; background: rgba(200, 30, 40, 0.88); border: 1px solid #ff8a8a; border-radius: 8px; box-shadow: 0 0 18px rgba(255, 60, 60, 0.55); animation: parpadeo 1s steps(2, start) infinite; }
+@keyframes parpadeo { 50% { background: rgba(120, 15, 25, 0.88); } }
+#aviso { position: absolute; left: 50%; bottom: calc(var(--alto-panel) + 18px); transform: translate(-50%, 6px); max-width: min(620px, calc(100vw - 28px)); padding: 8px 18px; background: var(--vidrio-fuerte); border: 1px solid var(--borde); border-radius: 999px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: 14px; text-align: center; opacity: 0; transition: opacity 0.25s, transform 0.25s; }
+#aviso.visible { opacity: 1; transform: translate(-50%, 0); }
 
-.pantalla { position: fixed; inset: 0; display: flex; padding: 16px; background: rgba(20, 30, 54, 0.45); overflow-y: auto; }
+.pantalla { position: fixed; inset: 0; display: flex; padding: 16px; background: radial-gradient(ellipse at center, rgba(10, 16, 28, 0.25), rgba(10, 16, 28, 0.6)); overflow-y: auto; }
 .pantalla > .caja { margin: auto; } /* centrado que no corta el contenido cuando no cabe */
-.caja { width: min(400px, 100%); padding: 26px; background: #1f2a44; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
-.caja.ancha { width: min(860px, 100%); }
-.caja h1 { margin: 6px 0 0; font-size: 38px; color: #f7c35f; }
-.caja h2 { margin: 0 0 10px; font-size: 26px; color: #f7c35f; }
-.sub { margin: 0 0 14px; color: #b9c6dc; }
-.volver { color: #86d3ef; font-size: 14px; text-decoration: none; }
+.caja { width: min(400px, 100%); padding: 26px; background: var(--vidrio-fuerte); border: 1px solid var(--borde); border-radius: 22px; -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+.caja.ancha { width: min(880px, 100%); }
+.caja h1 { margin: 8px 0 0; font-size: 40px; letter-spacing: -0.01em; background: linear-gradient(90deg, #ffd889, #ff9a62); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.caja h2 { margin: 0 0 10px; font-size: 26px; color: var(--oro); }
+.sub { margin: 0 0 14px; color: var(--suave); }
+.volver { color: var(--cielo); font-size: 14px; text-decoration: none; }
 .arriba-menu { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.instalar { padding: 6px 14px; background: #f7c35f; color: #2a1208; font-weight: 800; font-size: 14px; }
-.ayuda-ios { padding: 10px 12px; background: #2b3a5c; color: #f5f1e6; }
+.instalar { padding: 6px 14px; background: var(--oro); color: #2a1208; font-weight: 800; font-size: 14px; border-radius: 999px; }
+.ayuda-ios { padding: 10px 12px; background: var(--tarjeta); border-radius: var(--radio-chico); color: var(--texto); }
 .volver:hover { text-decoration: underline; }
 .lista-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-.pestanas { display: flex; gap: 6px; margin: 12px 0 14px; }
-.pestanas button { padding: 8px 16px; background: #2b3a5c; font-weight: 700; color: #cdd7e8; }
-.pestanas button[aria-selected="true"] { background: #f7c35f; color: #2a1208; }
+.pestanas { display: inline-flex; gap: 4px; margin: 14px 0 16px; padding: 4px; background: rgba(0, 0, 0, 0.28); border: 1px solid var(--borde); border-radius: 999px; }
+.pestanas button { padding: 8px 18px; background: transparent; font-weight: 700; color: var(--suave); border-radius: 999px; transition: background 0.2s, color 0.2s; }
+.pestanas button[aria-selected="true"] { background: var(--oro); color: #2a1208; box-shadow: 0 2px 10px rgba(247, 195, 95, 0.35); }
 .cuentas { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
-.cuentas div { padding: 9px 12px; background: #2b3a5c; }
-.cuentas span { display: block; font-size: 12px; color: #b9c6dc; }
+.cuentas div { padding: 10px 13px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio-chico); }
+.cuentas span { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); }
 .cuentas strong { font-size: 19px; font-variant-numeric: tabular-nums; }
 .negativo { color: #ff8a8a; }
-.titulo-seccion { margin: 18px 0 8px !important; font-size: 19px !important; }
-.nota { margin: 14px 0 0; font-size: 13px; color: #b9c6dc; }
-.mision .datos { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12.5px; color: #f5f1e6; font-variant-numeric: tabular-nums; }
-.mision:disabled { cursor: default; opacity: 0.6; transform: none; }
-.mision.actual { outline: 2px solid #f7c35f; outline-offset: -2px; }
+.titulo-seccion { margin: 20px 0 9px !important; font-size: 13px !important; text-transform: uppercase; letter-spacing: 0.12em; color: var(--suave) !important; }
+.nota { margin: 14px 0 0; font-size: 13px; color: var(--suave); }
+.mision .datos { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12.5px; color: var(--texto); font-variant-numeric: tabular-nums; }
+.mision:disabled { cursor: default; opacity: 0.55; transform: none; }
+.mision:disabled:hover { background: var(--tarjeta); border-color: var(--borde); }
+.mision.actual { border-color: var(--oro); box-shadow: inset 0 0 0 1px var(--oro); }
 .caja-crucero h2 { margin-bottom: 6px !important; }
-#mapa { display: block; width: 100%; height: min(46vh, 380px); margin: 6px 0 10px; background: #1f4f7a; }
-#c-evento { margin-top: 10px; padding: 12px 14px; background: #3a4d78; }
+#mapa { display: block; width: 100%; height: min(46vh, 380px); margin: 6px 0 10px; background: #1f4f7a; border-radius: var(--radio-chico); }
+#c-evento { margin-top: 10px; padding: 12px 14px; background: rgba(247, 195, 95, 0.12); border: 1px solid rgba(247, 195, 95, 0.4); border-radius: var(--radio-chico); }
 #c-evento p { margin: 0 0 8px; }
 .botones-evento { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.botones-evento button { flex: 1 1 160px; padding: 10px; background: #2b3a5c; font-weight: 700; }
-.botones-evento button.principal { background: #ff7a45; color: #2a1208; }
+.botones-evento button { flex: 1 1 160px; padding: 11px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; font-weight: 700; }
+.botones-evento button:hover { background: var(--tarjeta-hover); }
+.botones-evento button.principal { background: linear-gradient(180deg, #ff8d5c, #f2662f); border-color: transparent; color: #2a1208; }
 #fin-cuentas { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
-#fin-cuentas td { padding: 4px 0; border-bottom: 1px solid #33415f; }
+#fin-cuentas td { padding: 5px 0; border-bottom: 1px solid var(--borde); }
 #fin-cuentas td:last-child { text-align: right; white-space: nowrap; padding-left: 10px; }
-#fin-cuentas tr.total td { border-bottom: 0; font-weight: 800; color: #f7c35f; padding-top: 8px; }
+#fin-cuentas tr.total td { border-bottom: 0; font-weight: 800; color: var(--oro); padding-top: 9px; }
 .caja:has(#fin-cuentas:not([hidden])) { width: min(480px, 100%); }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; }
-button:focus-visible, a:focus-visible { outline: 3px solid #86d3ef; outline-offset: 2px; }
-.mision { position: relative; text-align: left; padding: 13px 14px; background: #2b3a5c; transition: background 0.15s, transform 0.15s; }
-.mision:hover { background: #3a4d78; transform: translateY(-2px); }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--cielo); outline-offset: 2px; }
+.mision { position: relative; text-align: left; padding: 14px 15px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; transition: background 0.15s, transform 0.15s, border-color 0.15s; }
+.mision:hover { background: var(--tarjeta-hover); border-color: rgba(255, 255, 255, 0.22); transform: translateY(-2px); }
 .mision strong { display: block; font-size: 16px; padding-right: 58px; }
-.mision .nivel { font-size: 12px; color: #f7c35f; }
-.mision p { margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: #cdd7e8; }
-.mision .estrellas { position: absolute; top: 13px; right: 12px; color: #f7c35f; font-size: 14px; }
-.teclas { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; font-size: 13px; color: #cdd7e8; }
-kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 3px; text-align: center; font: inherit; font-weight: 700; background: #3a4d78; color: #fff; }
-.caja > button { display: block; width: 100%; margin-top: 9px; padding: 11px; background: #2b3a5c; }
-.caja > button:hover { background: #3a4d78; }
-.caja > button.principal { background: #ff7a45; color: #2a1208; font-weight: 700; }
-.caja > button.principal:hover { background: #ff9365; }
-.estrellas-grandes { margin: 0 0 6px; font-size: 34px; color: #f7c35f; }
+.mision .nivel { font-size: 12px; color: var(--oro); }
+.mision p { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: #cdd7e8; }
+.mision .estrellas { position: absolute; top: 14px; right: 13px; color: var(--oro); font-size: 14px; letter-spacing: 1px; }
+.teclas { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--borde); font-size: 13px; color: #cdd7e8; }
+kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 3px; text-align: center; font: inherit; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--borde); border-bottom-width: 2px; border-radius: 6px; color: #fff; }
+.caja > button { display: block; width: 100%; margin-top: 9px; padding: 12px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; font-weight: 600; transition: background 0.15s; }
+.caja > button:hover { background: var(--tarjeta-hover); }
+.caja > button.principal { background: linear-gradient(180deg, #ff8d5c, #f2662f); border-color: transparent; color: #2a1208; font-weight: 800; box-shadow: 0 6px 18px rgba(255, 110, 60, 0.3); }
+.caja > button.principal:hover { background: linear-gradient(180deg, #ffa077, #ff7a45); }
+.estrellas-grandes { margin: 0 0 6px; font-size: 34px; color: var(--oro); letter-spacing: 4px; text-shadow: 0 0 18px rgba(247, 195, 95, 0.45); }
 #fin-detalle { line-height: 1.5; }
 
 /* ---- Mandos táctiles (solo en pantallas táctiles: el cuerpo lleva la clase .tactil) ---- */
@@ -76,25 +88,26 @@ body.tactil #tactil { display: block; }
 body.tactil .ayuda-tactil { display: flex; }
 body.tactil .teclas { display: none; }
 body.tactil { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-.ayuda-tactil { flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; font-size: 13px; color: #cdd7e8; }
-.ayuda-tactil b { display: inline-block; padding: 1px 6px; margin-right: 4px; background: #3a4d78; color: #fff; }
+.ayuda-tactil { flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--borde); font-size: 13px; color: #cdd7e8; }
+.ayuda-tactil b { display: inline-block; padding: 1px 7px; margin-right: 4px; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--borde); border-radius: 6px; color: #fff; }
 
 #tactil { position: absolute; left: 0; right: 0; top: 0; bottom: var(--alto-panel); --izq: max(12px, env(safe-area-inset-left)); --der: max(12px, env(safe-area-inset-right)); }
-#tactil button { pointer-events: auto; touch-action: none; min-width: 44px; min-height: 42px; padding: 0 10px; font-size: 13px; font-weight: 700; color: #f5f1e6; background: rgba(31, 42, 68, 0.72); border: 2px solid rgba(185, 198, 220, 0.35); }
-#tactil button.activo { background: #ff7a45; color: #2a1208; border-color: #ff7a45; }
+#tactil button { pointer-events: auto; touch-action: none; min-width: 44px; min-height: 42px; padding: 0 12px; font-size: 13px; font-weight: 700; color: var(--texto); background: var(--vidrio); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 12px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); transition: background 0.12s, transform 0.12s; }
+#tactil button:active, #tactil button.pulsado { background: rgba(255, 255, 255, 0.22); transform: scale(0.96); }
+#tactil button.activo { background: var(--coral); color: #2a1208; border-color: #ffb08a; box-shadow: 0 0 14px rgba(255, 122, 69, 0.5); }
 #botones-sup { position: absolute; top: max(10px, env(safe-area-inset-top)); right: var(--der); display: flex; gap: 8px; }
 #zona-palanca { position: absolute; left: 0; top: 34%; bottom: 0; width: 46%; pointer-events: auto; touch-action: none; }
-#palanca { position: absolute; left: calc(var(--izq) + 8px); bottom: 14px; width: 128px; height: 128px; margin: 0; border-radius: 50%; background: rgba(31, 42, 68, 0.45); border: 2px solid rgba(185, 198, 220, 0.45); transition: opacity 0.2s; opacity: 0.75; }
+#palanca { position: absolute; left: calc(var(--izq) + 8px); bottom: 14px; width: 128px; height: 128px; margin: 0; border-radius: 50%; background: radial-gradient(circle, rgba(16, 24, 38, 0.25) 40%, rgba(16, 24, 38, 0.55)); border: 1px solid rgba(255, 255, 255, 0.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 10px rgba(255, 255, 255, 0.04); transition: opacity 0.2s; opacity: 0.8; }
 #palanca.libre { transition: none; opacity: 1; }
-#pomo { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: #f7c35f; box-shadow: 0 3px 0 #a8792a; }
+#pomo { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe2a3, #f7c35f 45%, #c8902f); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 -2px 3px rgba(0, 0, 0, 0.2); }
 #mandos-der { position: absolute; right: var(--der); bottom: 12px; display: flex; gap: 10px; align-items: flex-end; }
 .rejilla { display: grid; grid-template-columns: repeat(2, minmax(78px, auto)); gap: 7px; }
 .rejilla .ancho { grid-column: span 2; }
 #gas { pointer-events: auto; touch-action: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; }
-#gas .etiqueta { padding: 1px 6px; font-size: 12px; font-weight: 800; color: #f5f1e6; background: rgba(31, 42, 68, 0.8); }
-#gas .carril { position: relative; width: 52px; height: 168px; background: rgba(16, 24, 43, 0.75); border: 2px solid rgba(185, 198, 220, 0.45); }
-#gas-relleno { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(255, 122, 69, 0.75); }
-#gas-tirador { position: absolute; left: -6px; right: -6px; height: 14px; bottom: 0; margin-bottom: -7px; background: #f5f1e6; box-shadow: 0 2px 0 #7f8aa3; }
+#gas .etiqueta { padding: 1px 8px; font-size: 11px; letter-spacing: 0.08em; font-weight: 800; color: var(--texto); background: var(--vidrio-fuerte); border-radius: 999px; }
+#gas .carril { position: relative; width: 52px; height: 168px; background: var(--vidrio); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+#gas-relleno { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 0; max-height: calc(100% - 6px); background: linear-gradient(0deg, rgba(255, 122, 69, 0.95), rgba(247, 195, 95, 0.9)); border-radius: 9px; }
+#gas-tirador { position: absolute; left: -7px; right: -7px; height: 16px; bottom: 0; margin-bottom: -8px; background: linear-gradient(180deg, #ffffff, #c9d1dd); border-radius: 6px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45); }
 
 /* En táctil, avisos y alertas van en el hueco entre la palanca y los botones */
 body.tactil #aviso, body.tactil #alertas { left: calc(max(12px, env(safe-area-inset-left)) + 148px); right: calc(max(12px, env(safe-area-inset-right)) + 262px); transform: none; text-align: center; white-space: normal; }
@@ -144,7 +157,8 @@ body.tactil #aviso { font-size: 13px; }
 }
 @media (max-height: 290px) { body.tactil #consejo { display: none; } }
 
-#girar { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: #1f2a44; text-align: center; }
+#girar { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at top, #22324f, #0f1724); text-align: center; }
 #girar .icono-girar { margin: 0; font-size: 56px; color: #f7c35f; }
 
-@media (prefers-reduced-motion: reduce) { .mision { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .mision, #aviso, #tactil button { transition: none; } #alertas:not(:empty) { animation: none; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .caja, .tarjeta-objetivo { background: rgba(14, 21, 34, 0.94); } }
