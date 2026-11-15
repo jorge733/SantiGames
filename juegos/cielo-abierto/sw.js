@@ -1,12 +1,12 @@
 // Service worker de Cielo Abierto: guarda el juego para poder jugar sin conexión.
 // Con conexión siempre se pide la versión nueva (y se guarda); sin conexión se usa la guardada.
 // Al publicar cambios grandes, sube VERSION para limpiar lo guardado antes.
-const VERSION = 'cielo-abierto-v1';
+const VERSION = 'cielo-abierto-v2';
 const ARCHIVOS = [
   './jugar.html', './index.html', './juego.css', './manifest.webmanifest', './portada.svg',
   './vendor/three.min.js',
   './js/destinos.js', './js/mapa-tierra.js', './js/mapa.js', './js/terreno.js', './js/fisica.js', './js/mundo.js',
-  './js/instrumentos.js', './js/pasajeros.js', './js/aerolinea.js', './js/misiones.js', './js/instalar.js', './js/juego.js',
+  './js/instrumentos.js', './js/asistencia.js', './js/pasajeros.js', './js/aerolinea.js', './js/misiones.js', './js/instalar.js', './js/juego.js',
   './iconos/icono.svg', './iconos/icono-192.png', './iconos/icono-512.png', './iconos/icono-adaptable-512.png', './iconos/apple-touch-icon.png',
   '../../assets/icono.svg', '../../css/estilos.css',
 ];

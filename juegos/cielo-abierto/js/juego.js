@@ -113,11 +113,38 @@
       mando.alabeo = acercar(mando.alabeo, alab, dt);
     }
     mando.timon = acercar(mando.timon, tim, dt);
+    // Pilotaje asistido (en el aire): la palanca pide actitud y el avión la mantiene.
+    if (asistido && e) {
+      let x = alab, y = cab;
+      if (toque.palanca && !cab && !alab) { x = toque.palancaX; y = curva(toque.palancaY); }
+      else if (toque.inclinar && !cab && !alab) { x = toque.inclinX; y = curva(toque.inclinY); }
+      const r = window.Asistencia.mandar(asistencia, F, e, F.telemetria(e, mundo), { x, y }, dt, mando.trim);
+      if (r) {
+        mando.cabeceo = r.cabeceo;
+        mando.alabeo = r.alabeo;
+        mando.timon = Math.max(-1, Math.min(1, r.timon + tim)); // el timón manual se suma
+      }
+    }
     if (hay('KeyR')) mando.acelerador = Math.min(1, mando.acelerador + 0.5 * dt);
     if (hay('KeyF')) mando.acelerador = Math.max(0, mando.acelerador - 0.5 * dt);
     if (hay('KeyT') || mantiene('trim-arriba')) mando.trim = Math.min(0.6, mando.trim + 0.15 * dt);
     if (hay('KeyG') || mantiene('trim-abajo')) mando.trim = Math.max(-0.6, mando.trim - 0.15 * dt);
     mando.freno = hay('Space') || mantiene('freno') ? 1 : 0;
+  }
+
+  // Asistido por defecto en pantallas táctiles; se cambia con el botón o la tecla V y se recuerda.
+  const asistencia = window.Asistencia.crear();
+  let asistido = leer('cielo-abierto:asistido') === null ? tactil : leer('cielo-abierto:asistido') === '1';
+  function pintarAsistido() {
+    const b = $('t-asistido');
+    if (b) { b.classList.toggle('activo', asistido); b.setAttribute('aria-pressed', String(asistido)); }
+  }
+  function alternarAsistido() {
+    asistido = !asistido;
+    asistencia.activa = false;
+    guardar('cielo-abierto:asistido', asistido ? '1' : '0');
+    pintarAsistido();
+    avisar(asistido ? 'Pilotaje asistido: el avión se mantiene estable solo' : 'Pilotaje manual: mandos directos', 2500);
   }
 
   function cambiarFlaps(paso) { mando.flaps = Math.max(0, Math.min(1, Math.round(mando.flaps * 3 + paso) / 3)); }
@@ -133,7 +160,7 @@
     teclas.clear();
     toque.mantener.clear();
     toque.palanca = false; toque.palancaX = 0; toque.palancaY = 0;
-    for (const b of document.querySelectorAll('#tactil .activo')) b.classList.remove('activo');
+    for (const b of document.querySelectorAll('#tactil [data-mantener].activo')) b.classList.remove('activo');
     if (typeof dejarPalanca === 'function') dejarPalanca();
   }
 
@@ -145,6 +172,7 @@
       if (ev.code === 'KeyX') cambiarFlaps(1);
       if (ev.code === 'KeyZ') cambiarFlaps(-1);
       if (ev.code === 'KeyC') cambiarCamara();
+      if (ev.code === 'KeyV') alternarAsistido();
       if (ev.code === 'KeyP' || ev.code === 'Escape') pausar(true);
     } else if (estado === 'pausa' && (ev.code === 'KeyP' || ev.code === 'Escape')) pausar(false);
     if (ev.code === 'KeyM') alternarSonido();
@@ -226,6 +254,8 @@
   alTocar('t-flaps-menos', () => { cambiarFlaps(-1); avisar('Flaps ' + Math.round(mando.flaps * 30) + '°'); });
   alTocar('t-flaps-mas', () => { cambiarFlaps(1); avisar('Flaps ' + Math.round(mando.flaps * 30) + '°'); });
   alTocar('t-camara', cambiarCamara);
+  alTocar('t-asistido', alternarAsistido);
+  pintarAsistido();
   alTocar('t-sonido', alternarSonido);
   alTocar('t-pausa', () => pausar(true));
   $('t-sonido').textContent = sonido.silencio ? 'Sin sonido' : 'Sonido';
@@ -438,6 +468,7 @@
     else { pasajeros.vAnterior = null; pasajeros.tInicio = undefined; pasajeros.toqueVisto = null; }
     e = F.crearEstado(Object.assign({ avion: m.avion }, op, { carga: pasajeros.carga }));
     combustibleInicial = e.combustible;
+    asistencia.activa = false;
     mundo.viento = m.viento;
     mundo.turbulencia = m.turbulencia;
     Object.assign(mando, { acelerador: op.acelerador || 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: op.flapsMando || 0, trim: op.trim || 0, freno: 0 });
