@@ -15,5 +15,15 @@ window.SANTIGAMES = {
       jugar: 'juegos/cielo-abierto/jugar.html',
       destacado: true,
     },
+    {
+      titulo: 'TaxiSim',
+      genero: 'Simulador de taxi',
+      resumen: 'Maneja un taxi por Ciudad Benedetto de 08:00 a 20:00: recoge pasajeros, llévalos a tiempo, esquiva el tráfico y ahorra para mejorar tu auto.',
+      estado: 'disponible',
+      plataforma: 'Navegador · teclado o táctil',
+      portada: 'juegos/taxisim/portada.svg',
+      ficha: 'juegos/taxisim/index.html',
+      jugar: 'juegos/taxisim/jugar.html',
+    },
   ],
 };
