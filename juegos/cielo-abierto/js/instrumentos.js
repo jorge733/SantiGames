@@ -49,14 +49,15 @@
     x.beginPath(); x.arc(cx, cy, r, a - Math.PI / 2, b - Math.PI / 2); x.stroke();
   }
 
-  function velocidad(x, cx, cy, r, t) {
+  function velocidad(x, cx, cy, r, t, a) {
     esfera(x, cx, cy, r);
-    const K = (v) => -2.5 + (Math.min(v, 180) / 180) * 5;
-    arco(x, cx, cy, r * 0.84, K(46), K(85), COL.texto, 3);
-    arco(x, cx, cy, r * 0.79, K(51), K(125), COL.verde, 4);
-    arco(x, cx, cy, r * 0.79, K(125), K(155), COL.oro, 4);
-    arco(x, cx, cy, r * 0.79, K(155), K(180), COL.rojo, 4);
-    for (let v = 0; v <= 160; v += 40) {
+    const K = (v) => -2.5 + (Math.min(v, a.maximo) / a.maximo) * 5;
+    arco(x, cx, cy, r * 0.84, K(a.flapsDesde), K(a.flapsHasta), COL.texto, 3);
+    arco(x, cx, cy, r * 0.79, K(a.verdeDesde), K(a.amarilloDesde), COL.verde, 4);
+    arco(x, cx, cy, r * 0.79, K(a.amarilloDesde), K(a.rojoDesde), COL.oro, 4);
+    arco(x, cx, cy, r * 0.79, K(a.rojoDesde), K(a.maximo), COL.rojo, 4);
+    const paso = a.maximo > 200 ? 50 : 40;
+    for (let v = 0; v < a.maximo; v += paso) {
       const a = K(v) - Math.PI / 2;
       rotulo(x, String(v), cx + Math.cos(a) * r * 0.56, cy + Math.sin(a) * r * 0.56, r * 0.17);
     }
@@ -155,7 +156,7 @@
     const r = pasoG * 0.44, cy = alto / 2;
     const totalG = pasoG * 5 + pasoG * 1.75;
     let cx = (ancho - totalG) / 2 + pasoG / 2;
-    velocidad(x, cx, cy, r, t); cx += pasoG;
+    velocidad(x, cx, cy, r, t, e.modelo.arcos); cx += pasoG;
     actitud(x, cx, cy, r, t); cx += pasoG;
     altimetro(x, cx, cy, r, t); cx += pasoG;
     rumbo(x, cx, cy, r, t, objetivo); cx += pasoG;
@@ -164,7 +165,7 @@
     const tam = Math.max(9, r * 0.17), altoB = alto * 0.5, anchoB = pasoG * 0.2, by = alto * 0.25, sep = pasoG * 0.3;
     barra(x, cx, by, anchoB, altoB, e.acelerador, COL.coral, 'GAS', Math.round(e.acelerador * 100) + '%', tam);
     barra(x, cx + sep, by, anchoB, altoB, e.motor, COL.oro, 'RPM', String(Math.round(t.rpm / 10) * 10), tam);
-    barra(x, cx + sep * 2, by, anchoB, altoB, e.combustible / 150, e.combustible < 15 ? COL.rojo : COL.verde, 'FUEL', Math.round(e.combustible) + ' L', tam);
+    barra(x, cx + sep * 2, by, anchoB, altoB, e.combustible / e.modelo.combustible, e.combustible < e.modelo.combustible * 0.12 ? COL.rojo : COL.verde, 'FUEL', Math.round(e.combustible) + ' L', tam);
     barra(x, cx + sep * 3, by, anchoB, altoB, e.flaps, COL.texto, 'FLAPS', Math.round(e.flaps * 30) + '°', tam);
     barra(x, cx + sep * 4, by, anchoB, altoB, (mando.trim + 0.6) / 1.2, COL.cielo, 'TRIM', (mando.trim > 0 ? '+' : '') + Math.round(mando.trim * 100), tam);
   }

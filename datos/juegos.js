@@ -7,7 +7,7 @@ window.SANTIGAMES = {
     {
       titulo: 'Cielo Abierto',
       genero: 'Simulador de vuelo 3D',
-      resumen: 'Pilota la avioneta de la aerolínea Cielo Abierto sobre una isla low-poly: lleva a tus pasajeros entre montañas y aterriza tan suave que te aplaudan.',
+      resumen: 'Pilota el Albatros 72, el turbohélice de la aerolínea Cielo Abierto: lleva a 48 pasajeros entre las montañas de una isla low-poly y aterriza tan suave que te aplaudan.',
       estado: 'disponible',
       plataforma: 'Navegador · teclado o táctil',
       portada: 'juegos/cielo-abierto/portada.svg',

@@ -1,7 +1,7 @@
 // Pasajeros de la aerolínea: su comodidad baja con los movimientos bruscos y los aterrizajes duros.
 (function (raiz) {
   'use strict';
-  const G = 9.81, KG_POR_PASAJERO = 70;
+  const G = 9.81, KG_POR_PASAJERO = 80; // con su equipaje
   const NOMBRES = ['Ana', 'Tomás', 'Rosa', 'Benja', 'Lucía', 'Matías', 'Sofía', 'Don Pedro', 'Valentina', 'Joaquín', 'Isidora', 'Abuela Marta'];
   const QUEJAS = {
     g: '¡Movimientos bruscos! Los pasajeros se marean',
@@ -14,7 +14,8 @@
   function crear(cantidad, azar) {
     const r = azar || Math.random;
     const libres = NOMBRES.slice(), nombres = [];
-    for (let i = 0; i < cantidad && libres.length; i++) nombres.push(libres.splice(Math.floor(r() * libres.length), 1)[0]);
+    // Se nombra a tres pasajeros para darles cara; el resto viaja con ellos.
+    for (let i = 0; i < Math.min(3, cantidad) && libres.length; i++) nombres.push(libres.splice(Math.floor(r() * libres.length), 1)[0]);
     return { cantidad, nombres, carga: cantidad * KG_POR_PASAJERO, comodidad: 100, fuerza: null, vAnterior: null, tAnterior: 0, toqueVisto: null, ultimaQueja: -99 };
   }
 

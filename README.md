@@ -17,7 +17,7 @@ El catálogo de la página principal se actualiza solo.
 
 ## Juegos
 
-- **Cielo Abierto** (`juegos/cielo-abierto/`): simulador de vuelo 3D de una aerolínea con pasajeros. Su comodidad (`js/pasajeros.js`) baja con maniobras bruscas y aterrizajes duros, y limita las estrellas. Se juega con teclado o, en celular y tablet, con mandos táctiles en horizontal. Las misiones se editan en `js/misiones.js` (`consejoTactil` es el consejo que se muestra en pantallas táctiles).
+- **Cielo Abierto** (`juegos/cielo-abierto/`): simulador de vuelo 3D de una aerolínea: se pilota el Albatros 72, un turbohélice regional con 48 pasajeros. Cada avión se define en `AVIONES` (`js/fisica.js`); la avioneta original sigue disponible con `avion: 'avioneta'` en una misión. Su comodidad (`js/pasajeros.js`) baja con maniobras bruscas y aterrizajes duros, y limita las estrellas. Se juega con teclado o, en celular y tablet, con mandos táctiles en horizontal. Las misiones se editan en `js/misiones.js` (`consejoTactil` es el consejo que se muestra en pantallas táctiles).
 
 ## Créditos
 

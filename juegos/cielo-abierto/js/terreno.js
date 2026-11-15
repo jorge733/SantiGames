@@ -67,8 +67,25 @@
     return -30 + isla * (46 + colinas + montes * factorPasillos(x, z));
   }
 
+  // Zona libre bajo la aproximación final (todas las pistas se aproximan desde el sur):
+  // el terreno no supera una pendiente de 1,7° desde el umbral, por debajo de la senda de 3° de las luces PAPI.
+  function pasilloFinal(ap, x, z) {
+    const d = z - (ap.z + ap.mitadLargo);
+    if (d <= 0 || d >= 7000) return null;
+    const ancho = 250 + d * 0.15;
+    return { peso: suave(ancho + 400, ancho, Math.abs(x - ap.x)) * suave(7000, 5000, d), tope: ap.y - 3 + d * 0.03, dentro: Math.abs(x - ap.x) < ancho + 100 };
+  }
+
+  function enPasilloFinal(x, z) {
+    return AEROPUERTOS.some((ap) => { const p = pasilloFinal(ap, x, z); return p && p.dentro && z - ap.z < 5000; });
+  }
+
   function alturaConAeropuertos(x, z) {
     let h = alturaNatural(x, z);
+    for (const ap of AEROPUERTOS) {
+      const p = pasilloFinal(ap, x, z);
+      if (p && h > p.tope) h += (p.tope - h) * p.peso;
+    }
     for (const ap of AEROPUERTOS) {
       const dx = Math.max(0, Math.abs(x - ap.x) - 300);
       const dz = Math.max(0, Math.abs(z - ap.z) - 1100);
@@ -104,6 +121,6 @@
     return Math.abs(x - ap.x) <= ap.mitadAncho && Math.abs(z - ap.z) <= ap.mitadLargo;
   }
 
-  raiz.Terreno = { CELDA, N, MITAD, AEROPUERTOS, altura, vertice, enPista, azar, suave };
+  raiz.Terreno = { CELDA, N, MITAD, AEROPUERTOS, altura, vertice, enPista, enPasilloFinal, azar, suave };
   if (typeof module !== 'undefined') module.exports = raiz.Terreno;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -64,7 +64,7 @@
   function actualizarSonido(t, activo) {
     if (!sonido.ctx) return;
     const ahora = sonido.ctx.currentTime;
-    sonido.motor.frequency.setTargetAtTime(35 + (t ? t.rpm : 0) * 0.055, ahora, 0.08);
+    sonido.motor.frequency.setTargetAtTime(35 + (t ? e.motor : 0) * 150, ahora, 0.08);
     sonido.gMotor.gain.setTargetAtTime(activo ? 0.16 + e.motor * 0.3 : 0, ahora, 0.1);
     sonido.gAire.gain.setTargetAtTime(activo ? Math.min(0.28, (t.nudos / 140) * 0.28) : 0, ahora, 0.15);
     sonido.gAlarma.gain.setTargetAtTime(activo && t.avisoPerdida ? 0.07 : 0, ahora, 0.03);
@@ -86,7 +86,7 @@
     const tim = (hay('KeyE') || mantiene('timon-der') ? 1 : 0) - (hay('KeyQ') || mantiene('timon-izq') ? 1 : 0);
     // Una tecla es todo o nada: a más velocidad, menos recorrido de elevador para no entrar en pérdida.
     const velocidad = e ? Math.hypot(e.v[0], e.v[1], e.v[2]) * 1.94384 : 0;
-    const recorrido = Math.min(1, Math.pow(62 / Math.max(velocidad, 1), 2));
+    const recorrido = Math.min(1, Math.pow((e ? e.modelo.velocidadMando : 62) / Math.max(velocidad, 1), 2));
     if (toque.palanca && !cab && !alab) {
       // La palanca táctil es proporcional: sigue al dedo casi sin retraso.
       mando.cabeceo = seguir(mando.cabeceo, curva(toque.palancaY) * recorrido, dt);
@@ -298,7 +298,7 @@
     indicePaso = 0;
     const op = m.inicio;
     pasajeros = P.crear(m.pasajeros || 0);
-    e = F.crearEstado(Object.assign({}, op, { carga: pasajeros.carga }));
+    e = F.crearEstado(Object.assign({ avion: m.avion }, op, { carga: pasajeros.carga }));
     mundo.viento = m.viento;
     mundo.turbulencia = m.turbulencia;
     Object.assign(mando, { acelerador: op.acelerador || 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: op.flapsMando || 0, trim: op.trim || 0, freno: 0 });
@@ -311,7 +311,7 @@
     $('consejo').textContent = (tactil && m.consejoTactil) || m.consejo;
     actualizarObjetivo();
     textoPasajeros = '';
-    if (pasajeros.cantidad) avisar('Bienvenidos a bordo: ' + P.lista(pasajeros.nombres));
+    if (pasajeros.cantidad) avisar(`Bienvenidos a bordo del ${e.modelo.nombre}: ${pasajeros.cantidad} pasajeros, entre ellos ${P.lista(pasajeros.nombres)}`, 3500);
     lienzo.focus();
   }
 
@@ -379,7 +379,7 @@
     }
     let puntos = fpm < 120 ? 50 : fpm < 250 ? 40 : fpm < 400 ? 25 : 10;
     puntos += centro < 5 ? 30 : centro < 15 ? 20 : 5;
-    puntos += desdeUmbral > 0 && desdeUmbral < 350 ? 20 : desdeUmbral < 700 ? 10 : 0;
+    puntos += desdeUmbral > 0 && desdeUmbral < 500 ? 20 : desdeUmbral < 900 ? 10 : 0;
     const estrellas = puntos >= 80 ? 3 : puntos >= 55 ? 2 : 1;
     terminar(true, 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
   }
@@ -423,17 +423,17 @@
     qAvion.set(e.q[0], e.q[1], e.q[2], e.q[3]);
     if (modoCamara === 1) {
       camara.fov = 68;
-      vA.set(0, 1.28, -0.25).applyQuaternion(qAvion).add(vP);
+      vA.set(0, 0.95, -11.2).applyQuaternion(qAvion).add(vP);
       camara.position.copy(vA);
       camara.quaternion.copy(qAvion);
     } else if (modoCamara === 0) {
       camara.fov = 62;
       qCam.slerp(qAvion, 1 - Math.exp(-5 * dt));
-      vA.set(0, 3.6, 15).applyQuaternion(qCam).add(vP);
-      vA.y = Math.max(vA.y, Math.max(T.altura(vA.x, vA.z), 0) + 1.2);
+      vA.set(0, 8.5, 46).applyQuaternion(qCam).add(vP);
+      vA.y = Math.max(vA.y, Math.max(T.altura(vA.x, vA.z), 0) + 2);
       camara.position.copy(vA);
       camara.up.set(0, 1, 0).applyQuaternion(qCam);
-      camara.lookAt(vB.set(0, 1, -30).applyQuaternion(qCam).add(vP));
+      camara.lookAt(vB.set(0, 2.5, -70).applyQuaternion(qCam).add(vP));
     } else {
       let cerca = T.AEROPUERTOS[0];
       for (const a of T.AEROPUERTOS) if (Math.hypot(a.x - e.p[0], a.z - e.p[2]) < Math.hypot(cerca.x - e.p[0], cerca.z - e.p[2])) cerca = a;
@@ -476,7 +476,7 @@
       camara.position.set(Math.sin(angulo) * 2600, 520, 900 + Math.cos(angulo) * 2600);
       camara.lookAt(0, 90, -500);
       camara.updateProjectionMatrix();
-      const vistaMenu = F.crearEstado({ p: [0, 31.27, 650], enTierra: true });
+      const vistaMenu = F.crearEstado({ p: [0, 30 + F.AVIONES.regional.alturaEnTierra, 650], enTierra: true });
       mundo3d.actualizar(vistaMenu, mando, camara, mundo.viento);
       render.render(escena, camara);
       return;

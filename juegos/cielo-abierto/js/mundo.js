@@ -1,4 +1,4 @@
-// Escena 3D low-poly: isla, cielo, aeropuertos, nubes y avioneta.
+// Escena 3D low-poly: isla, cielo, aeropuertos, nubes y los aviones de la aerolínea.
 (function () {
   'use strict';
   const T = window.Terreno;
@@ -77,6 +77,7 @@
       const h = T.altura(x, z);
       if (h < 14 || h > 380 || T.azar(i, 47) < 0.25) continue;
       if (T.AEROPUERTOS.some((a) => Math.abs(x - a.x) < 450 && Math.abs(z - a.z) < 1400)) continue;
+      if (T.enPasilloFinal(x, z)) continue; // sin árboles altos bajo la aproximación
       lista.push([x, h - 0.5, z, 7 + T.azar(i, 5) * 8, 16 + T.azar(i, 8) * 22, T.azar(i, 13)]);
     }
     const malla = new THREE.InstancedMesh(g, new THREE.MeshLambertMaterial({ flatShading: true }), lista.length);
@@ -170,7 +171,7 @@
     return { grupo: g, papi, manga };
   }
 
-  function crearAvion() {
+  function crearAvioneta() {
     const g = new THREE.Group();
     const mat = (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true });
     const pieza = (geo, c, x, y, z) => {
@@ -231,7 +232,116 @@
     helice.add(pala, disco);
     g.add(helice);
 
-    g.userData = { alerones, elevador, timon, flaps, helice, pala, disco };
+    g.userData = { alerones, elevador, timon, flaps, helices: [{ grupo: helice, palas: [pala], disco }] };
+    return g;
+  }
+
+  // Albatros 72: turbohélice regional de ala alta, 27 m de envergadura y 27 m de largo.
+  function crearRegional() {
+    const g = new THREE.Group();
+    const BLANCO = 0xfafaf2, CORAL = 0xee6c4d, ORO = 0xf7c35f, OSCURO = 0x22344f, GRIS = 0xd9d9cf, NEGRO = 0x2b2b33;
+    const mat = (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true });
+    const pieza = (geo, c, x, y, z, padre) => {
+      const m = new THREE.Mesh(geo, mat(c));
+      m.position.set(x, y, z);
+      m.castShadow = true;
+      (padre || g).add(m);
+      return m;
+    };
+    // Tubo a lo largo del eje Z: r1 delante, r2 detrás (al girarlo, la tapa superior queda detrás).
+    const tubo = (r1, r2, largo, c, x, y, z, lados) => {
+      const geo = new THREE.CylinderGeometry(r2, r1, largo, lados || 12);
+      geo.rotateX(Math.PI / 2);
+      return pieza(geo, c, x, y, z);
+    };
+
+    // Fuselaje: morro, cabina de pasajeros y cola levantada.
+    tubo(1.4, 1.4, 18, BLANCO, 0, 0, -1);
+    tubo(0.35, 1.05, 2.2, BLANCO, 0, -0.3, -12.1);
+    tubo(1.05, 1.4, 1.8, BLANCO, 0, -0.1, -10.1);
+    const cola = tubo(1.4, 0.35, 6.5, BLANCO, 0, 0.5, 11.1);
+    cola.rotation.x = -0.12;
+    // Parabrisas y franja de la aerolínea.
+    pieza(new THREE.BoxGeometry(1.5, 0.42, 0.9), OSCURO, 0, 0.62, -10.9).rotation.x = -0.45;
+    for (const lado of [-1, 1]) {
+      pieza(new THREE.BoxGeometry(0.1, 0.32, 0.7), OSCURO, lado * 0.92, 0.55, -10.5);
+      pieza(new THREE.BoxGeometry(0.06, 0.28, 19.5), CORAL, lado * 1.37, -0.38, -0.3);
+      pieza(new THREE.BoxGeometry(0.06, 0.1, 19.5), ORO, lado * 1.35, -0.62, -0.3);
+      // Ventanillas de los pasajeros.
+      for (let z = -8; z <= 6.5; z += 0.95) pieza(new THREE.BoxGeometry(0.08, 0.3, 0.24), OSCURO, lado * 1.37, 0.28, z);
+      pieza(new THREE.BoxGeometry(0.08, 1.3, 0.75), GRIS, lado * 1.36, -0.05, -8.9); // puerta delantera
+    }
+    pieza(new THREE.BoxGeometry(2.6, 0.5, 6), BLANCO, 0, 1.25, 0.6); // carenado del ala
+
+    // Ala alta.
+    pieza(new THREE.BoxGeometry(27, 0.3, 2.6), BLANCO, 0, 1.6, 0.5);
+    for (const lado of [-1, 1]) pieza(new THREE.BoxGeometry(0.6, 0.32, 2.6), CORAL, lado * 13.2, 1.6, 0.5);
+
+    // Motores con hélices de cuatro palas.
+    const helices = [];
+    for (const lado of [-1, 1]) {
+      const x = lado * 4.1;
+      tubo(0.62, 0.5, 5.4, BLANCO, x, 1.05, -0.4);
+      tubo(0.45, 0.62, 0.9, CORAL, x, 1.05, -3.4);
+      const cono = new THREE.ConeGeometry(0.35, 0.8, 8);
+      cono.rotateX(-Math.PI / 2);
+      pieza(cono, ORO, x, 1.05, -4.2);
+      const helice = new THREE.Group();
+      helice.position.set(x, 1.05, -4.0);
+      const palas = [];
+      for (let i = 0; i < 4; i++) {
+        const pala = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.95, 0.06), mat(NEGRO));
+        pala.geometry.translate(0, 1, 0);
+        pala.rotation.z = (i * Math.PI) / 2;
+        helice.add(pala);
+        palas.push(pala);
+      }
+      const disco = new THREE.Mesh(
+        new THREE.CircleGeometry(2.0, 24),
+        new THREE.MeshBasicMaterial({ color: 0x20242e, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false })
+      );
+      helice.add(disco);
+      g.add(helice);
+      helices.push({ grupo: helice, palas, disco });
+    }
+
+    // Cola en T con los colores de la aerolínea.
+    const deriva = pieza(new THREE.BoxGeometry(0.28, 4.6, 3.0), CORAL, 0, 3.6, 11.4);
+    deriva.rotation.x = 0.42;
+    pieza(new THREE.BoxGeometry(0.3, 0.6, 2.2), ORO, 0, 2.2, 11.3).rotation.x = 0.42;
+    pieza(new THREE.BoxGeometry(7.6, 0.2, 1.5), BLANCO, 0, 5.75, 12.6);
+
+    const articulada = (a, b, c, col, x, y, z) => {
+      const eje = new THREE.Group();
+      eje.position.set(x, y, z);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(a, b, c), mat(col));
+      m.position.z = c / 2;
+      eje.add(m);
+      g.add(eje);
+      return eje;
+    };
+    const alerones = [articulada(4.2, 0.12, 0.6, ORO, -10.3, 1.55, 1.8), articulada(4.2, 0.12, 0.6, ORO, 10.3, 1.55, 1.8)];
+    const flaps = [articulada(5.6, 0.12, 0.65, GRIS, -5.2, 1.5, 1.8), articulada(5.6, 0.12, 0.65, GRIS, 5.2, 1.5, 1.8)];
+    const elevador = articulada(7.6, 0.12, 0.6, ORO, 0, 5.75, 13.35);
+    const timon = articulada(0.16, 3.6, 0.9, ORO, 0, 3.7, 12.9);
+    timon.rotation.x = 0.42;
+
+    // Tren de aterrizaje: patas principales en carenados laterales y rueda de morro.
+    const rueda = (x, y, z, r) => {
+      const geo = new THREE.CylinderGeometry(r, r, 0.3, 10);
+      geo.rotateZ(Math.PI / 2);
+      pieza(geo, NEGRO, x, y, z);
+    };
+    for (const lado of [-1, 1]) {
+      pieza(new THREE.BoxGeometry(0.9, 0.9, 4.2), BLANCO, lado * 1.55, -1.0, 0.8);
+      pieza(new THREE.BoxGeometry(0.14, 0.7, 0.14), GRIS, lado * 2.1, -1.4, 0.8);
+      rueda(lado * 2.1, -1.66, 0.45, 0.45);
+      rueda(lado * 2.1, -1.66, 1.15, 0.45);
+    }
+    pieza(new THREE.BoxGeometry(0.14, 0.8, 0.14), GRIS, 0, -1.25, -9.5);
+    rueda(0, -1.72, -9.5, 0.34);
+
+    g.userData = { alerones, elevador, timon, flaps, helices };
     return g;
   }
 
@@ -266,21 +376,27 @@
       escena.add(a.grupo);
       return { ap, ...a };
     });
-    const avion = crearAvion();
+    const modelos = { regional: crearRegional(), avioneta: crearAvioneta() };
     const aro = crearAro();
-    escena.add(avion, aro);
+    escena.add(modelos.regional, modelos.avioneta, aro);
 
     const ROJO = new THREE.Color(0xff3030), BLANCO = new THREE.Color(0xffffff);
     const LIMITES = [3.5, 3.17, 2.83, 2.5];
 
     function actualizar(e, mando, camara, viento) {
       cielo.position.copy(camara.position);
+      const clave = e.modelo === window.Fisica.AVIONES.avioneta ? 'avioneta' : 'regional';
+      modelos.regional.visible = clave === 'regional';
+      modelos.avioneta.visible = clave === 'avioneta';
+      const avion = modelos[clave];
       avion.position.set(e.p[0], e.p[1], e.p[2]);
       avion.quaternion.set(e.q[0], e.q[1], e.q[2], e.q[3]);
       const u = avion.userData;
-      u.helice.rotation.z += e.motor * 1.4;
-      u.pala.visible = e.motor < 0.3;
-      u.disco.visible = e.motor >= 0.3;
+      for (const h of u.helices) {
+        h.grupo.rotation.z += e.motor * 1.4;
+        for (const pala of h.palas) pala.visible = e.motor < 0.3;
+        h.disco.visible = e.motor >= 0.3;
+      }
       u.alerones[0].rotation.x = mando.alabeo * 0.35;
       u.alerones[1].rotation.x = -mando.alabeo * 0.35;
       u.elevador.rotation.x = -Math.max(-1, Math.min(1, mando.cabeceo + mando.trim)) * 0.4;
@@ -309,7 +425,7 @@
       aro.rotation.y = Math.atan2(origen.x - punto.x, origen.z - punto.z);
     }
 
-    return { actualizar, colocarAro, avion };
+    return { actualizar, colocarAro, modelos };
   }
 
   window.Mundo = { crear };

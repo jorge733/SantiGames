@@ -1,23 +1,57 @@
-// Modelo de vuelo de 6 grados de libertad de una avioneta ficticia de la aerolínea, con hasta 3 pasajeros.
+// Modelo de vuelo de 6 grados de libertad. Los aviones son ficticios y se describen en AVIONES.
 // Ejes del avión: X = derecha, Y = arriba, Z = atrás (el morro apunta a -Z).
 // Giros positivos: X = morro arriba, Y = morro a la izquierda, Z = alabeo a la izquierda.
 (function (raiz) {
   'use strict';
 
-  const G = 9.81, RHO0 = 1.225;
-  const S = 16.2, ENVERGADURA = 11, CUERDA = 1.5;
-  const ALARGAMIENTO = (ENVERGADURA * ENVERGADURA) / S;
-  const I_CABECEO = 1825, I_GUINADA = 2670, I_ALABEO = 1290;
-  const MASA_VACIO = 790, KG_POR_LITRO = 0.72;
-  const POTENCIA = 134000, EMPUJE_ESTATICO = 3000, RALENTI = 0.12;
+  const G = 9.81, RHO0 = 1.225, RALENTI = 0.12;
 
-  const RUEDAS = [
-    { r: [0, -1.3, -1.6], k: 45000, c: 5000, morro: true },
-    { r: [-1.25, -1.35, 0.3], k: 60000, c: 7000, freno: true },
-    { r: [1.25, -1.35, 0.3], k: 60000, c: 7000, freno: true },
-    { r: [0, -0.25, 5], k: 50000, c: 9000, patin: true },
-  ];
-  const PUNTOS_CHOQUE = [[0, -0.4, -2.5], [-5.5, -0.3, 0.1], [5.5, -0.3, 0.1]];
+  // Coeficientes adimensionales comunes; cada avión aporta tamaño, masa, motor y tren.
+  const AVIONES = {
+    // Turbohélice regional de la aerolínea: ala alta, dos motores, 48 pasajeros.
+    regional: {
+      nombre: 'Albatros 72', pasajeros: 48,
+      S: 70, envergadura: 27, cuerda: 2.6,
+      inercia: { cabeceo: 120000, guinada: 260000, alabeo: 110000 },
+      masaVacio: 12000, kgPorLitro: 0.8, combustible: 2000, consumo: 0.25,
+      potencia: 4000000, empujeEstatico: 70000, empujeRalenti: 2000,
+      estela: 0, parHelice: 0, cola: 1.2, rpmMax: 1200,
+      velocidadMando: 115, // nudos a partir de los que se limita el recorrido del elevador con teclas
+      ruedas: [
+        { r: [0, -2.05, -9.5], k: 400000, c: 60000, morro: true },
+        { r: [-2.1, -2.1, 0.8], k: 900000, c: 110000, freno: true },
+        { r: [2.1, -2.1, 0.8], k: 900000, c: 110000, freno: true },
+        { r: [0, -0.15, 12], k: 900000, c: 150000, patin: true },
+      ],
+      choque: [[0, -0.9, -13], [-13.5, 1.6, 0.4], [13.5, 1.6, 0.4]],
+      // Velocidades en nudos para los arcos del velocímetro.
+      arcos: { maximo: 300, flapsDesde: 85, flapsHasta: 160, verdeDesde: 100, amarilloDesde: 220, rojoDesde: 250 },
+    },
+    // Avioneta de escuela de 4 plazas (el avión original del juego).
+    avioneta: {
+      nombre: 'Avioneta', pasajeros: 3,
+      S: 16.2, envergadura: 11, cuerda: 1.5,
+      inercia: { cabeceo: 1825, guinada: 2670, alabeo: 1290 },
+      masaVacio: 790, kgPorLitro: 0.72, combustible: 110, consumo: 0.012,
+      potencia: 134000, empujeEstatico: 3000, empujeRalenti: 130,
+      estela: 350, parHelice: 90, cola: 0.7, rpmMax: 2700,
+      velocidadMando: 62,
+      ruedas: [
+        { r: [0, -1.3, -1.6], k: 45000, c: 5000, morro: true },
+        { r: [-1.25, -1.35, 0.3], k: 60000, c: 7000, freno: true },
+        { r: [1.25, -1.35, 0.3], k: 60000, c: 7000, freno: true },
+        { r: [0, -0.25, 5], k: 50000, c: 9000, patin: true },
+      ],
+      choque: [[0, -0.4, -2.5], [-5.5, -0.3, 0.1], [5.5, -0.3, 0.1]],
+      arcos: { maximo: 180, flapsDesde: 46, flapsHasta: 85, verdeDesde: 51, amarilloDesde: 125, rojoDesde: 155 },
+    },
+  };
+  for (const a of Object.values(AVIONES)) {
+    a.alargamiento = (a.envergadura * a.envergadura) / a.S;
+    // Altura del centro del avión sobre la pista cuando está parado (ruedas un poco comprimidas).
+    const principal = a.ruedas.find((r) => r.freno);
+    a.alturaEnTierra = -principal.r[1] - 0.06;
+  }
 
   const rad = (g) => (g * Math.PI) / 180;
   const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -45,7 +79,9 @@
   }
 
   function crearEstado(op) {
+    const modelo = AVIONES[op.avion || 'regional'];
     return {
+      modelo,
       p: op.p.slice(),
       v: (op.v || [0, 0, 0]).slice(),
       q: (op.q || [0, 0, 0, 1]).slice(),
@@ -53,7 +89,7 @@
       acelerador: op.acelerador || 0,
       motor: op.motor !== undefined ? op.motor : RALENTI,
       flaps: op.flaps || 0,
-      combustible: op.combustible !== undefined ? op.combustible : 110,
+      combustible: op.combustible !== undefined ? op.combustible : modelo.combustible,
       carga: op.carga || 0, // kg de pasajeros y equipaje
       enTierra: !!op.enTierra,
       tiempoAire: op.enTierra ? 0 : 10,
@@ -79,13 +115,14 @@
   function paso(e, m, mundo, dt) {
     if (e.estrellado) return;
     e.t += dt;
+    const A = e.modelo, S = A.S, ENVERGADURA = A.envergadura, CUERDA = A.cuerda;
 
     e.acelerador += limitar(m.acelerador - e.acelerador, -0.6 * dt, 0.6 * dt);
     e.flaps += limitar(m.flaps - e.flaps, -0.3 * dt, 0.3 * dt);
     const conMotor = e.combustible > 0;
     const motorObjetivo = conMotor ? RALENTI + (1 - RALENTI) * e.acelerador : 0;
     e.motor += (motorObjetivo - e.motor) * Math.min(1, dt * 1.6);
-    if (conMotor) e.combustible = Math.max(0, e.combustible - 0.012 * (0.2 + 0.8 * e.acelerador) * dt);
+    if (conMotor) e.combustible = Math.max(0, e.combustible - A.consumo * (0.2 + 0.8 * e.acelerador) * dt);
 
     const rho = RHO0 * Math.exp(-Math.max(0, e.p[1]) / 8500);
     const viento = vientoEn(mundo, e.t);
@@ -98,7 +135,12 @@
     const vRef = Math.max(V, 8);
 
     const fb = [0, 0, 0];
-    const { cl, perdida, alfaEntrada } = coeficienteSustentacion(alfa, e.flaps);
+    const sust = coeficienteSustentacion(alfa, e.flaps);
+    const { perdida, alfaEntrada } = sust;
+    // Efecto suelo: a menos de una envergadura del suelo el ala sustenta más y frena menos.
+    const sobreSuelo = e.p[1] - Math.max(mundo.altura(e.p[0], e.p[2]), 0) - A.alturaEnTierra;
+    const efectoSuelo = suave(ENVERGADURA, 0, sobreSuelo);
+    const cl = sust.cl * (1 + 0.1 * efectoSuelo);
     e.perdida = perdida;
     e.alfa = alfa;
     e.alfaEntrada = alfaEntrada;
@@ -107,36 +149,37 @@
       const elev = cruz([1, 0, 0], dir);
       const n = largo(elev) || 1;
       const potenciaUtil = limitar((e.motor - RALENTI) / (1 - RALENTI), 0, 1);
-      const cd = 0.032 + (cl * cl) / (Math.PI * 0.75 * ALARGAMIENTO) + 0.045 * e.flaps +
+      const cd = 0.032 + (1 - 0.4 * efectoSuelo) * (cl * cl) / (Math.PI * 0.75 * A.alargamiento) + 0.045 * e.flaps +
         1.1 * Math.pow(Math.sin(alfa), 2) * perdida + (potenciaUtil < 0.1 ? 0.012 : 0);
       for (let i = 0; i < 3; i++) fb[i] += qd * S * ((cl * elev[i]) / n - cd * dir[i]);
       fb[0] += qd * S * -0.6 * beta;
     }
     const pot = limitar((e.motor - RALENTI) / (1 - RALENTI), 0, 1) * (rho / RHO0);
-    const empuje = Math.min(EMPUJE_ESTATICO * pot + 130 * (e.motor > 0.05 ? 1 : 0), (0.8 * POTENCIA * pot) / Math.max(V, 1) + 130);
+    const ralenti = A.empujeRalenti * (e.motor > 0.05 ? 1 : 0);
+    const empuje = Math.min(A.empujeEstatico * pot + ralenti, (0.8 * A.potencia * pot) / Math.max(V, 1) + ralenti);
     fb[2] -= e.motor > 0.05 ? empuje : 0;
 
     // Momentos aerodinámicos. El chorro de la hélice da mando a baja velocidad.
-    const qCola = qd + 350 * e.motor * e.motor;
+    const qCola = qd + A.estela * e.motor * e.motor;
     const elevador = limitar(m.cabeceo + m.trim, -1, 1) * rad(22);
     const cm = 0.02 - 0.9 * Math.sin(alfa) - 0.15 * perdida - 0.03 * e.flaps;
     const mb = [
-      qd * S * CUERDA * cm - qd * S * CUERDA * 12 * e.w[0] * (CUERDA / (2 * vRef)) + qCola * S * CUERDA * 0.7 * elevador,
+      qd * S * CUERDA * cm - qd * S * CUERDA * 12 * e.w[0] * (CUERDA / (2 * vRef)) + qCola * S * CUERDA * A.cola * elevador,
       -qd * S * ENVERGADURA * 0.12 * beta - qd * S * ENVERGADURA * 0.1 * e.w[1] * (ENVERGADURA / (2 * vRef)) -
-        qCola * S * ENVERGADURA * 0.04 * m.timon * rad(25) + 90 * e.motor * (1 - Math.min(1, V / 70)),
+        qCola * S * ENVERGADURA * 0.04 * m.timon * rad(25) + A.parHelice * e.motor * (1 - Math.min(1, V / 70)),
       qd * S * ENVERGADURA * 0.09 * beta - qd * S * ENVERGADURA * 0.5 * e.w[2] * (ENVERGADURA / (2 * vRef)) -
         qd * S * ENVERGADURA * 0.15 * (1 - 0.6 * perdida) * m.alabeo * rad(17),
     ];
     if (perdida > 0.2) mb[2] += qd * S * ENVERGADURA * 0.012 * perdida * Math.sin(e.t * 1.7);
 
     const f = rotar(e.q, fb);
-    const masa = MASA_VACIO + e.carga + e.combustible * KG_POR_LITRO;
+    const masa = A.masaVacio + e.carga + e.combustible * A.kgPorLitro;
     f[1] -= masa * G;
 
     // Tren de aterrizaje: muelles, frenos y dirección con la rueda de morro.
     let tocando = false;
     const adelante = rotar(e.q, [0, 0, -1]);
-    for (const rueda of RUEDAS) {
+    for (const rueda of A.ruedas) {
       const r = rotar(e.q, rueda.r);
       const pm = [e.p[0] + r[0], e.p[1] + r[1], e.p[2] + r[2]];
       const h = mundo.altura(pm[0], pm[2]);
@@ -179,7 +222,7 @@
     e.enTierra = tocando;
     e.tiempoAire = tocando ? 0 : e.tiempoAire + dt;
 
-    for (const c of PUNTOS_CHOQUE) {
+    for (const c of A.choque) {
       const r = rotar(e.q, c);
       const x = e.p[0] + r[0], z = e.p[2] + r[2];
       if (e.p[1] + r[1] < Math.max(mundo.altura(x, z), 0)) { e.estrellado = 'choque'; return; }
@@ -191,10 +234,11 @@
       e.p[i] += e.v[i] * dt;
     }
     const w = e.w;
+    const I = A.inercia;
     e.w = [
-      w[0] + ((mb[0] - (I_ALABEO - I_GUINADA) * w[1] * w[2]) / I_CABECEO) * dt,
-      w[1] + ((mb[1] - (I_CABECEO - I_ALABEO) * w[2] * w[0]) / I_GUINADA) * dt,
-      w[2] + ((mb[2] - (I_GUINADA - I_CABECEO) * w[0] * w[1]) / I_ALABEO) * dt,
+      w[0] + ((mb[0] - (I.alabeo - I.guinada) * w[1] * w[2]) / I.cabeceo) * dt,
+      w[1] + ((mb[1] - (I.cabeceo - I.alabeo) * w[2] * w[0]) / I.guinada) * dt,
+      w[2] + ((mb[2] - (I.guinada - I.cabeceo) * w[0] * w[1]) / I.alabeo) * dt,
     ];
     const [x, y, z, s] = e.q;
     const [a, b, c] = e.w;
@@ -222,13 +266,13 @@
       rumbo: ((Math.atan2(adelante[0], -adelante[2]) * 180) / Math.PI + 360) % 360,
       cabeceo: Math.asin(limitar(adelante[1], -1, 1)),
       alabeo: Math.atan2(-derecha[1], arriba[1]),
-      rpm: e.motor * 2700,
+      rpm: e.motor * e.modelo.rpmMax,
       avisoPerdida: !e.enTierra && e.alfa > e.alfaEntrada - rad(3) && largo(aire) > 8,
       alturaSuelo: e.p[1] - Math.max(mundo.altura(e.p[0], e.p[2]), 0),
       adelante, derecha, arriba,
     };
   }
 
-  raiz.Fisica = { crearEstado, paso, telemetria, rotar, rad };
+  raiz.Fisica = { AVIONES, crearEstado, paso, telemetria, rotar, rad };
   if (typeof module !== 'undefined') module.exports = raiz.Fisica;
 })(typeof window !== 'undefined' ? window : globalThis);
