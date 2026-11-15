@@ -58,6 +58,7 @@ nav a:hover, nav a[aria-current="page"] { border-color: var(--coral); }
 
 .banda { background: var(--noche); color: #eef2fb; }
 .banda h2 { color: var(--oro); }
+.banda h3 { margin-top: 26px; font-size: 21px; color: var(--oro); }
 .banda .intro { color: #cdd7e8; }
 .banda .boton { background: var(--coral); color: #2a1208; }
 

@@ -9,7 +9,7 @@ window.SANTIGAMES = {
       genero: 'Simulador de vuelo 3D',
       resumen: 'Pilota una avioneta sobre una isla low-poly: despega, cruza las montañas y demuestra que sabes aterrizar.',
       estado: 'disponible',
-      plataforma: 'Navegador · teclado',
+      plataforma: 'Navegador · teclado o táctil',
       portada: 'juegos/cielo-abierto/portada.svg',
       ficha: 'juegos/cielo-abierto/index.html',
       jugar: 'juegos/cielo-abierto/jugar.html',

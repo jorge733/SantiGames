@@ -1,7 +1,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; color: #f5f1e6; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
 [hidden] { display: none !important; }
-#escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+#escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
 
 #hud { position: fixed; inset: 0; pointer-events: none; --alto-panel: 150px; }
 #panel { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; }
@@ -22,7 +22,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; col
 .sub { margin: 0 0 14px; color: #b9c6dc; }
 .volver { color: #86d3ef; font-size: 14px; text-decoration: none; }
 .volver:hover { text-decoration: underline; }
-.tactil { padding: 10px 12px; background: #5c2a35; }
 #misiones { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 button:focus-visible, a:focus-visible { outline: 3px solid #86d3ef; outline-offset: 2px; }
@@ -40,5 +39,55 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 3p
 .caja > button.principal:hover { background: #ff9365; }
 .estrellas-grandes { margin: 0 0 6px; font-size: 34px; color: #f7c35f; }
 #fin-detalle { line-height: 1.5; }
+
+/* ---- Mandos táctiles (solo en pantallas táctiles: el cuerpo lleva la clase .tactil) ---- */
+#tactil, .ayuda-tactil { display: none; }
+body.tactil #tactil { display: block; }
+body.tactil .ayuda-tactil { display: flex; }
+body.tactil .teclas { display: none; }
+body.tactil { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.ayuda-tactil { flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; font-size: 13px; color: #cdd7e8; }
+.ayuda-tactil b { display: inline-block; padding: 1px 6px; margin-right: 4px; background: #3a4d78; color: #fff; }
+
+#tactil { position: absolute; left: 0; right: 0; top: 0; bottom: var(--alto-panel); --izq: max(12px, env(safe-area-inset-left)); --der: max(12px, env(safe-area-inset-right)); }
+#tactil button { pointer-events: auto; touch-action: none; min-width: 44px; min-height: 42px; padding: 0 10px; font-size: 13px; font-weight: 700; color: #f5f1e6; background: rgba(31, 42, 68, 0.72); border: 2px solid rgba(185, 198, 220, 0.35); }
+#tactil button.activo { background: #ff7a45; color: #2a1208; border-color: #ff7a45; }
+#botones-sup { position: absolute; top: max(10px, env(safe-area-inset-top)); right: var(--der); display: flex; gap: 8px; }
+#zona-palanca { position: absolute; left: 0; top: 34%; bottom: 0; width: 46%; pointer-events: auto; touch-action: none; }
+#palanca { position: absolute; left: calc(var(--izq) + 8px); bottom: 14px; width: 128px; height: 128px; margin: 0; border-radius: 50%; background: rgba(31, 42, 68, 0.45); border: 2px solid rgba(185, 198, 220, 0.45); transition: opacity 0.2s; opacity: 0.75; }
+#palanca.libre { transition: none; opacity: 1; }
+#pomo { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: #f7c35f; box-shadow: 0 3px 0 #a8792a; }
+#mandos-der { position: absolute; right: var(--der); bottom: 12px; display: flex; gap: 10px; align-items: flex-end; }
+.rejilla { display: grid; grid-template-columns: repeat(2, minmax(78px, auto)); gap: 7px; }
+.rejilla .ancho { grid-column: span 2; }
+#gas { pointer-events: auto; touch-action: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; }
+#gas .etiqueta { padding: 1px 6px; font-size: 12px; font-weight: 800; color: #f5f1e6; background: rgba(31, 42, 68, 0.8); }
+#gas .carril { position: relative; width: 52px; height: 168px; background: rgba(16, 24, 43, 0.75); border: 2px solid rgba(185, 198, 220, 0.45); }
+#gas-relleno { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(255, 122, 69, 0.75); }
+#gas-tirador { position: absolute; left: -6px; right: -6px; height: 14px; bottom: 0; margin-bottom: -7px; background: #f5f1e6; box-shadow: 0 2px 0 #7f8aa3; }
+
+/* Teléfonos en horizontal: poca altura, todo más compacto */
+@media (max-height: 460px) {
+  body.tactil .tarjeta-objetivo { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); max-width: min(330px, 44vw); padding: 7px 11px; }
+  body.tactil #objetivo { font-size: 13.5px; }
+  body.tactil #ruta { font-size: 11.5px; }
+  body.tactil #consejo { font-size: 11px; }
+  body.tactil #alertas { top: auto; bottom: calc(var(--alto-panel) + 52px); font-size: 18px; }
+  #tactil button { min-height: 36px; font-size: 12px; }
+  .rejilla { gap: 5px; grid-template-columns: repeat(2, minmax(70px, auto)); }
+  #gas .carril { height: 132px; }
+  #palanca { width: 112px; height: 112px; bottom: 8px; }
+  #pomo { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
+  #mandos-der { bottom: 8px; }
+}
+@media (max-height: 360px) {
+  #tactil button { min-height: 32px; }
+  #gas .carril { height: 112px; }
+  body.tactil #consejo { font-size: 10.5px; }
+}
+@media (max-height: 290px) { body.tactil #consejo { display: none; } }
+
+#girar { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: #1f2a44; text-align: center; }
+#girar .icono-girar { margin: 0; font-size: 56px; color: #f7c35f; }
 
 @media (prefers-reduced-motion: reduce) { .mision { transition: none; } }

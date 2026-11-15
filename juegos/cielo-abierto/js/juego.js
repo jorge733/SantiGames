@@ -5,9 +5,11 @@
   const PASO = 1 / 240;
   const $ = (id) => document.getElementById(id);
 
+  // Pantalla táctil sin ratón (celular o tablet): se muestran los mandos en pantalla.
+  let tactil = navigator.maxTouchPoints > 0 && !window.matchMedia('(pointer: fine)').matches;
   const lienzo = $('escena');
   const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, logarithmicDepthBuffer: true });
-  render.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  render.setPixelRatio(Math.min(window.devicePixelRatio, tactil ? 1.5 : 2));
   render.shadowMap.enabled = true;
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(62, 1, 0.3, 45000);
@@ -19,6 +21,8 @@
   const mundo = { altura: T.altura, viento: [0, 0, 0], turbulencia: 0 };
   const mando = { acelerador: 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: 0, trim: 0, freno: 0 };
   const teclas = new Set();
+  // Estado de los mandos táctiles. palanca: -1..1 (x a la derecha, y hacia abajo = tirar).
+  const toque = { palancaX: 0, palancaY: 0, palanca: false, mantener: new Set() };
   const qCam = new THREE.Quaternion();
 
   function guardar(clave, valor) { try { localStorage.setItem(clave, valor); } catch (_) { /* almacenamiento no disponible */ } }
@@ -71,21 +75,48 @@
     const velocidad = objetivo === 0 ? 4 : 2.2;
     return actual + Math.max(-velocidad * dt, Math.min(velocidad * dt, objetivo - actual));
   }
+  const mantiene = (nombre) => toque.mantener.has(nombre);
+  // Curva suave para la palanca: precisa cerca del centro y con todo el recorrido en el borde.
+  const curva = (v) => Math.sign(v) * Math.pow(Math.abs(v), 1.6);
+  function seguir(actual, objetivo, dt) { return actual + (objetivo - actual) * (1 - Math.exp(-12 * dt)); }
   function leerMandos(dt) {
     const cab = (hay('KeyS', 'ArrowDown') ? 1 : 0) - (hay('KeyW', 'ArrowUp') ? 1 : 0);
     const alab = (hay('KeyD', 'ArrowRight') ? 1 : 0) - (hay('KeyA', 'ArrowLeft') ? 1 : 0);
-    const tim = (hay('KeyE') ? 1 : 0) - (hay('KeyQ') ? 1 : 0);
+    const tim = (hay('KeyE') || mantiene('timon-der') ? 1 : 0) - (hay('KeyQ') || mantiene('timon-izq') ? 1 : 0);
     // Una tecla es todo o nada: a más velocidad, menos recorrido de elevador para no entrar en pérdida.
     const velocidad = e ? Math.hypot(e.v[0], e.v[1], e.v[2]) * 1.94384 : 0;
     const recorrido = Math.min(1, Math.pow(62 / Math.max(velocidad, 1), 2));
-    mando.cabeceo = acercar(mando.cabeceo, cab * recorrido, dt);
-    mando.alabeo = acercar(mando.alabeo, alab, dt);
+    if (toque.palanca && !cab && !alab) {
+      // La palanca táctil es proporcional: sigue al dedo casi sin retraso.
+      mando.cabeceo = seguir(mando.cabeceo, curva(toque.palancaY) * recorrido, dt);
+      mando.alabeo = seguir(mando.alabeo, curva(toque.palancaX), dt);
+    } else {
+      mando.cabeceo = acercar(mando.cabeceo, cab * recorrido, dt);
+      mando.alabeo = acercar(mando.alabeo, alab, dt);
+    }
     mando.timon = acercar(mando.timon, tim, dt);
     if (hay('KeyR')) mando.acelerador = Math.min(1, mando.acelerador + 0.5 * dt);
     if (hay('KeyF')) mando.acelerador = Math.max(0, mando.acelerador - 0.5 * dt);
-    if (hay('KeyT')) mando.trim = Math.min(0.6, mando.trim + 0.15 * dt);
-    if (hay('KeyG')) mando.trim = Math.max(-0.6, mando.trim - 0.15 * dt);
-    mando.freno = hay('Space') ? 1 : 0;
+    if (hay('KeyT') || mantiene('trim-arriba')) mando.trim = Math.min(0.6, mando.trim + 0.15 * dt);
+    if (hay('KeyG') || mantiene('trim-abajo')) mando.trim = Math.max(-0.6, mando.trim - 0.15 * dt);
+    mando.freno = hay('Space') || mantiene('freno') ? 1 : 0;
+  }
+
+  function cambiarFlaps(paso) { mando.flaps = Math.max(0, Math.min(1, Math.round(mando.flaps * 3 + paso) / 3)); }
+  function cambiarCamara() { modoCamara = (modoCamara + 1) % 3; avisar(['Cámara exterior', 'Cámara de cabina', 'Cámara de torre'][modoCamara]); }
+  function alternarSonido() {
+    sonido.silencio = !sonido.silencio;
+    guardar('cielo-abierto:silencio', sonido.silencio ? '1' : '0');
+    if (sonido.maestro) sonido.maestro.gain.value = sonido.silencio ? 0 : 0.5;
+    avisar(sonido.silencio ? 'Sonido apagado' : 'Sonido encendido');
+    $('t-sonido').textContent = sonido.silencio ? 'Sin sonido' : 'Sonido';
+  }
+  function soltarMandos() {
+    teclas.clear();
+    toque.mantener.clear();
+    toque.palanca = false; toque.palancaX = 0; toque.palancaY = 0;
+    for (const b of document.querySelectorAll('#tactil .activo')) b.classList.remove('activo');
+    if (typeof dejarPalanca === 'function') dejarPalanca();
   }
 
   window.addEventListener('keydown', (ev) => {
@@ -93,20 +124,140 @@
     if (ev.repeat) return;
     if (estado === 'vuelo') {
       teclas.add(ev.code);
-      if (ev.code === 'KeyX') mando.flaps = Math.min(1, Math.round(mando.flaps * 3 + 1) / 3);
-      if (ev.code === 'KeyZ') mando.flaps = Math.max(0, Math.round(mando.flaps * 3 - 1) / 3);
-      if (ev.code === 'KeyC') { modoCamara = (modoCamara + 1) % 3; avisar(['Cámara exterior', 'Cámara de cabina', 'Cámara de torre'][modoCamara]); }
+      if (ev.code === 'KeyX') cambiarFlaps(1);
+      if (ev.code === 'KeyZ') cambiarFlaps(-1);
+      if (ev.code === 'KeyC') cambiarCamara();
       if (ev.code === 'KeyP' || ev.code === 'Escape') pausar(true);
     } else if (estado === 'pausa' && (ev.code === 'KeyP' || ev.code === 'Escape')) pausar(false);
-    if (ev.code === 'KeyM') {
-      sonido.silencio = !sonido.silencio;
-      guardar('cielo-abierto:silencio', sonido.silencio ? '1' : '0');
-      if (sonido.maestro) sonido.maestro.gain.value = sonido.silencio ? 0 : 0.5;
-      avisar(sonido.silencio ? 'Sonido apagado' : 'Sonido encendido');
-    }
+    if (ev.code === 'KeyM') alternarSonido();
   });
   window.addEventListener('keyup', (ev) => teclas.delete(ev.code));
-  window.addEventListener('blur', () => { teclas.clear(); if (estado === 'vuelo') pausar(true); });
+  window.addEventListener('blur', () => { soltarMandos(); if (estado === 'vuelo') pausar(true); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { soltarMandos(); if (estado === 'vuelo') pausar(true); } });
+
+  // ---- Mandos táctiles ----
+  function activarTactil() {
+    if (tactil && document.body.classList.contains('tactil')) return;
+    tactil = true;
+    document.body.classList.add('tactil');
+    pintarMenu();
+    ajustar();
+  }
+  // Un aparato con ratón y pantalla táctil pasa a modo táctil en cuanto se toca la pantalla.
+  window.addEventListener('pointerdown', (ev) => { if (ev.pointerType === 'touch') activarTactil(); }, true);
+
+  const zonaPalanca = $('zona-palanca'), palanca = $('palanca'), pomo = $('pomo');
+  let dedoPalanca = null, centroPalanca = null;
+  function dejarPalanca() {
+    dedoPalanca = null;
+    toque.palanca = false; toque.palancaX = 0; toque.palancaY = 0;
+    palanca.classList.remove('libre');
+    palanca.style.left = palanca.style.top = palanca.style.bottom = '';
+    pomo.style.transform = '';
+  }
+  function moverPalanca(ev) {
+    const radio = palanca.offsetWidth / 2;
+    let dx = ev.clientX - centroPalanca.x, dy = ev.clientY - centroPalanca.y;
+    const d = Math.hypot(dx, dy);
+    if (d > radio) { dx *= radio / d; dy *= radio / d; }
+    toque.palancaX = dx / radio;
+    toque.palancaY = dy / radio;
+    pomo.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+  zonaPalanca.addEventListener('pointerdown', (ev) => {
+    if (dedoPalanca !== null || estado !== 'vuelo') return;
+    ev.preventDefault();
+    dedoPalanca = ev.pointerId;
+    zonaPalanca.setPointerCapture(ev.pointerId);
+    // La palanca aparece donde se apoya el dedo, sin salirse de la zona.
+    const caja = zonaPalanca.getBoundingClientRect(), radio = palanca.offsetWidth / 2;
+    const x = Math.max(caja.left + radio, Math.min(caja.right - radio, ev.clientX));
+    const y = Math.max(caja.top + radio, Math.min(caja.bottom - radio, ev.clientY));
+    centroPalanca = { x, y };
+    palanca.classList.add('libre');
+    palanca.style.left = (x - caja.left - radio) + 'px';
+    palanca.style.top = (y - caja.top - radio) + 'px';
+    palanca.style.bottom = 'auto';
+    toque.palanca = true;
+    moverPalanca(ev);
+  });
+  zonaPalanca.addEventListener('pointermove', (ev) => { if (ev.pointerId === dedoPalanca) moverPalanca(ev); });
+  for (const tipo of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    zonaPalanca.addEventListener(tipo, (ev) => { if (ev.pointerId === dedoPalanca) dejarPalanca(); });
+  }
+
+  // Botones que actúan mientras se mantienen pulsados (timón, frenos, compensador).
+  for (const b of document.querySelectorAll('[data-mantener]')) {
+    const nombre = b.dataset.mantener;
+    b.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      b.setPointerCapture(ev.pointerId);
+      toque.mantener.add(nombre);
+      b.classList.add('activo');
+    });
+    for (const tipo of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+      b.addEventListener(tipo, () => { toque.mantener.delete(nombre); b.classList.remove('activo'); });
+    }
+    b.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  }
+  // Botones de un solo toque.
+  function alTocar(id, accion) {
+    $(id).addEventListener('pointerdown', (ev) => { ev.preventDefault(); if (estado === 'vuelo') accion(); });
+  }
+  alTocar('t-flaps-menos', () => { cambiarFlaps(-1); avisar('Flaps ' + Math.round(mando.flaps * 30) + '°'); });
+  alTocar('t-flaps-mas', () => { cambiarFlaps(1); avisar('Flaps ' + Math.round(mando.flaps * 30) + '°'); });
+  alTocar('t-camara', cambiarCamara);
+  alTocar('t-sonido', alternarSonido);
+  alTocar('t-pausa', () => pausar(true));
+  $('t-sonido').textContent = sonido.silencio ? 'Sin sonido' : 'Sonido';
+
+  // Gas: se arrastra arriba y abajo. Es relativo al punto de partida, así un toque no lo cambia de golpe.
+  const gas = $('gas'), carrilGas = gas.querySelector('.carril');
+  let dedoGas = null, gasInicio = 0, yInicio = 0;
+  gas.addEventListener('pointerdown', (ev) => {
+    if (dedoGas !== null || estado !== 'vuelo') return;
+    ev.preventDefault();
+    dedoGas = ev.pointerId;
+    gas.setPointerCapture(ev.pointerId);
+    gasInicio = mando.acelerador;
+    yInicio = ev.clientY;
+  });
+  gas.addEventListener('pointermove', (ev) => {
+    if (ev.pointerId !== dedoGas) return;
+    mando.acelerador = Math.max(0, Math.min(1, gasInicio + (yInicio - ev.clientY) / carrilGas.clientHeight));
+  });
+  for (const tipo of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    gas.addEventListener(tipo, (ev) => { if (ev.pointerId === dedoGas) dedoGas = null; });
+  }
+  let gasPintado = -1;
+  function pintarGas() {
+    const v = Math.round(mando.acelerador * 100);
+    if (v === gasPintado) return;
+    gasPintado = v;
+    $('gas-relleno').style.height = v + '%';
+    $('gas-tirador').style.bottom = v + '%';
+    gas.setAttribute('aria-valuenow', String(v));
+  }
+
+  // En vertical no caben los mandos: se pide girar el celular y se pausa el vuelo.
+  function revisarOrientacion() {
+    const vertical = tactil && window.innerHeight > window.innerWidth && estado !== 'menu';
+    $('girar').hidden = !vertical;
+    if (vertical && estado === 'vuelo') pausar(true);
+  }
+  function pantallaCompleta() {
+    if (!tactil || document.fullscreenElement) return;
+    const raiz = document.documentElement;
+    const pedir = raiz.requestFullscreen || raiz.webkitRequestFullscreen;
+    if (!pedir) return;
+    try {
+      const promesa = pedir.call(raiz, { navigationUI: 'hide' });
+      if (promesa && promesa.then) {
+        promesa.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+          .catch(() => { /* el navegador no lo permite: se sigue jugando igual */ });
+      }
+    } catch (_) { /* sin pantalla completa */ }
+  }
 
   // ---- Interfaz ----
   let temporizadorAviso = 0;
@@ -141,6 +292,7 @@
 
   function empezar(m) {
     iniciarSonido();
+    pantallaCompleta();
     mision = m;
     indicePaso = 0;
     const op = m.inicio;
@@ -149,12 +301,12 @@
     mundo.turbulencia = m.turbulencia;
     Object.assign(mando, { acelerador: op.acelerador || 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: op.flapsMando || 0, trim: op.trim || 0, freno: 0 });
     qCam.set(e.q[0], e.q[1], e.q[2], e.q[3]);
-    teclas.clear();
+    soltarMandos();
     acumulado = 0;
     estado = 'vuelo';
     pantalla(null);
     $('hud').hidden = false;
-    $('consejo').textContent = m.consejo;
+    $('consejo').textContent = (tactil && m.consejoTactil) || m.consejo;
     actualizarObjetivo();
     lienzo.focus();
   }
@@ -164,7 +316,7 @@
     estado = si ? 'pausa' : 'vuelo';
     pantalla(si ? 'pausa' : null);
     $('hud').hidden = false;
-    teclas.clear();
+    soltarMandos();
     if (!si) { ultimo = performance.now(); acumulado = 0; }
   }
 
@@ -297,8 +449,10 @@
     ctxPanel.setTransform(ratio, 0, 0, ratio, 0, 0);
     ajustar.altoPanel = altoPanel;
     $('hud').style.setProperty('--alto-panel', altoPanel + 'px');
+    revisarOrientacion();
   }
   window.addEventListener('resize', ajustar);
+  window.addEventListener('orientationchange', () => setTimeout(ajustar, 250));
 
   let angulo = 0;
   function bucle(ahora) {
@@ -331,6 +485,7 @@
     mundo3d.actualizar(e, mando, camara, mundo.viento);
     render.render(escena, camara);
 
+    if (tactil) pintarGas();
     const objetivo = rumboObjetivo();
     window.Instrumentos.dibujar(ctxPanel, window.innerWidth, ajustar.altoPanel, t, e, mando, objetivo.rumbo);
     if (estado === 'vuelo') actualizarSonido(t, true);
@@ -345,7 +500,7 @@
       : `Rumbo ${String(Math.round(objetivo.rumbo) % 360).padStart(3, '0')}° · ${(objetivo.dist / 1000).toFixed(1).replace('.', ',')} km · objetivo ${Math.round(objetivo.altura)} m · estás a ${Math.round(e.p[1])} m`;
   }
 
-  $('b-seguir').addEventListener('click', () => pausar(false));
+  $('b-seguir').addEventListener('click', () => { if (tactil && window.innerHeight > window.innerWidth) return; pausar(false); });
   $('b-reiniciar').addEventListener('click', () => empezar(mision));
   $('b-menu').addEventListener('click', () => volverMenu());
   $('b-reintentar').addEventListener('click', () => empezar(mision));
@@ -359,9 +514,10 @@
     pintarMenu();
     pantalla('menu');
     $('hud').hidden = true;
+    revisarOrientacion();
   }
 
-  if (navigator.maxTouchPoints > 0 && !window.matchMedia('(pointer: fine)').matches) $('aviso-tactil').hidden = false;
+  if (tactil) document.body.classList.add('tactil');
 
   // Enganche de solo lectura para pruebas automáticas.
   window.__cieloAbierto = { get estado() { return estado; }, get avion() { return e; }, get pasoIndice() { return indicePaso; } };
