@@ -471,7 +471,7 @@
       inicio: { p: [ap.x, ap.y + A.alturaEnTierra, ap.z + ap.mitadLargo - 60], enTierra: true, combustible: oferta.combustible },
       viento: oferta.viento, turbulencia: oferta.clima.turbulencia,
       pasos: [{ tipo: 'punto', nombre: `Salida de ${origen.ciudad}`, x: ap.x, y: ap.y + ALTURA_SALIDA[oferta.avion], z: ap.z - ap.mitadLargo - 4500 }],
-      aviso: `Vuelo ${oferta.numero} de ${origen.ciudad} a ${destino.ciudad}: ${oferta.pasajeros} pasajeros a bordo`,
+      aviso: `Bienvenidos a Benedetto: vuelo ${oferta.numero} de ${origen.ciudad} a ${destino.ciudad} con ${oferta.pasajeros} pasajeros`,
     });
   }
 
@@ -485,7 +485,7 @@
     // Entre 10 y 35 segundos según la distancia; se puede acelerar o saltar.
     vuelo.crucero = { t: 0, duracion: Math.max(10, Math.min(35, 6 + Math.sqrt(o.distancia) * 0.32)), rapido: 1, evento: null, hechos: {} };
     vuelo.crucero.litros = o.distancia * flota.litroKm;
-    $('c-vuelo').textContent = `Vuelo ${o.numero} · ${flota.nombre} · piloto automático`;
+    $('c-vuelo').textContent = `Benedetto ${o.numero} · ${flota.nombre} · piloto automático`;
     $('c-ruta').textContent = `${origen.ciudad} → ${destino.ciudad}`;
     $('c-altitud').textContent = ALTITUD_CRUCERO[o.avion];
     $('c-evento').hidden = true;
@@ -579,7 +579,7 @@
       },
       viento: o.viento, turbulencia: o.clima.turbulencia,
       pasos: [{ tipo: 'aterrizar', aeropuerto: ap.id }],
-      aviso: `Bienvenidos a ${destino.ciudad}, ${destino.pais}. Preparados para aterrizar.`,
+      aviso: `Benedetto les da la bienvenida a ${destino.ciudad}, ${destino.pais}. Preparados para aterrizar.`,
     }, true);
   }
 
@@ -652,7 +652,7 @@
       fila('Total del vuelo', AL.dinero(r.total), 'total');
       const cambio = r.reputacion - r.reputacionAntes;
       fila(`Reputación ${cambio >= 0 ? '+' : '−'}${Math.abs(cambio)}`, `${r.reputacion} / 100`);
-      fila('Saldo de la aerolínea', AL.dinero(r.saldo));
+      fila('Saldo de Benedetto', AL.dinero(r.saldo));
       fila('El avión está en', nombreDe(aerolinea.ubicacion));
     }
     pintarMenu();
@@ -685,7 +685,7 @@
     const zona = Math.max(500, a.mitadLargo * 0.4);
     puntos += desdeUmbral > 0 && desdeUmbral < zona ? 20 : desdeUmbral < zona * 1.8 ? 10 : 0;
     const estrellas = puntos >= 80 ? 3 : puntos >= 55 ? 2 : 1;
-    terminar(true, mision.aerolinea ? `Vuelo ${mision.aerolinea.numero} completado` : 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
+    terminar(true, mision.aerolinea ? `Vuelo Benedetto ${mision.aerolinea.numero} completado` : 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
   }
 
   function comprobarMision() {

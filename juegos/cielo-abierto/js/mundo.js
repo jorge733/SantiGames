@@ -292,6 +292,35 @@
     return g;
   }
 
+  // Nombre de la aerolínea pintado sobre el fuselaje: una franja curva del mismo radio que el tubo,
+  // con el texto en una textura. Se pone a los dos lados y se lee de morro a cola en ambos.
+  function rotuloAerolinea(g, radio, largo, zCentro, alturaTexto, altoLetra) {
+    const lienzo = document.createElement('canvas');
+    lienzo.width = 1024; lienzo.height = 128;
+    const x = lienzo.getContext('2d');
+    x.fillStyle = '#ee6c4d';
+    x.font = 'bold 104px system-ui, sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('BENEDETTO', 512, 68, 1000);
+    const textura = new THREE.CanvasTexture(lienzo);
+    textura.colorSpace = THREE.SRGBColorSpace;
+    textura.anisotropy = 4;
+    const arco = altoLetra / radio, centro = Math.acos(-alturaTexto / radio);
+    for (const lado of [1, -1]) {
+      const t = textura.clone();
+      t.needsUpdate = true;
+      // La textura va a lo largo del tubo: se gira 90° y, en el lado izquierdo, se invierte para no leerse al revés.
+      t.center.set(0.5, 0.5);
+      t.rotation = lado > 0 ? -Math.PI / 2 : Math.PI / 2;
+      const inicio = lado > 0 ? centro - arco / 2 : 2 * Math.PI - centro - arco / 2;
+      const geo = new THREE.CylinderGeometry(radio + 0.02, radio + 0.02, largo, 6, 1, true, inicio, arco);
+      geo.rotateX(Math.PI / 2);
+      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: t, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      m.position.z = zCentro;
+      g.add(m);
+    }
+  }
+
   // Albatros 72: turbohélice regional de ala alta, 27 m de envergadura y 27 m de largo.
   function crearRegional() {
     const g = new THREE.Group();
@@ -328,6 +357,7 @@
       pieza(new THREE.BoxGeometry(0.08, 1.3, 0.75), GRIS, lado * 1.36, -0.05, -8.9); // puerta delantera
     }
     pieza(new THREE.BoxGeometry(2.6, 0.5, 6), BLANCO, 0, 1.25, 0.6); // carenado del ala
+    rotuloAerolinea(g, 1.4, 5.2, -6.0, 0.72, 0.5);
 
     // Ala alta.
     pieza(new THREE.BoxGeometry(27, 0.3, 2.6), BLANCO, 0, 1.6, 0.5);
@@ -459,6 +489,7 @@
       ventanas.setMatrixAt(n++, o.matrix);
     }
     g.add(ventanas);
+    rotuloAerolinea(g, 2.9, 15, -10, 1.75, 0.95);
 
     // Alas bajas en flecha con diedro.
     for (const lado of [-1, 1]) {

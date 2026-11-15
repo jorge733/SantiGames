@@ -7,7 +7,7 @@ window.SANTIGAMES = {
     {
       titulo: 'Cielo Abierto',
       genero: 'Simulador de vuelo 3D',
-      resumen: 'Dirige tu aerolínea y vuela desde Santiago a 24 ciudades reales de Chile y del mundo: despega, cruza el mapa y aterriza tan suave que tus pasajeros te aplaudan.',
+      resumen: 'Dirige la aerolínea Benedetto y vuela desde Santiago a 24 ciudades reales de Chile y del mundo: despega, cruza el mapa y aterriza tan suave que tus pasajeros te aplaudan.',
       estado: 'disponible',
       plataforma: 'Navegador · teclado o táctil',
       portada: 'juegos/cielo-abierto/portada.svg',

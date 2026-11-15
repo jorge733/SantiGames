@@ -1,4 +1,4 @@
-// Modo aerolínea: dinero, reputación, flota y tablero de salidas entre destinos reales.
+// Modo aerolínea (Benedetto): dinero, reputación, flota y tablero de salidas entre destinos reales.
 // Se guarda en el navegador. La geografía de cada destino está en js/destinos.js.
 (function (raiz) {
   'use strict';
@@ -88,7 +88,7 @@
       const ocupacion = Math.max(0.2, Math.min(1, 0.35 + (estado.reputacion / 100) * 0.6 + (azar() - 0.5) * 0.25));
       const lado = azar() < 0.5 ? -1 : 1;
       return {
-        id: `${estado.semilla}-${i}`, numero: 'CA ' + (100 + Math.floor(azar() * 900)),
+        id: `${estado.semilla}-${i}`, numero: 'BN ' + (100 + Math.floor(azar() * 225) * 4 + i), // distinto para cada salida del tablero
         hora: String(6 + Math.floor(azar() * 16)).padStart(2, '0') + ':' + ['00', '15', '30', '45'][Math.floor(azar() * 4)],
         origen: origen.codigo, destino: destino.codigo, distancia, horas: distancia / avion.crucero + 0.5,
         clima, viento: [lado * clima.viento, 0, clima.viento * 0.3],
