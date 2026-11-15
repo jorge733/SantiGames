@@ -8,14 +8,37 @@
 
   // Coeficientes adimensionales comunes; cada avión aporta tamaño, masa, motor y tren.
   const AVIONES = {
+    // Jet de largo alcance de la aerolínea: dos turbofanes, 300 pasajeros, más de 14.000 km de alcance.
+    jet: {
+      nombre: 'Cóndor 300', pasajeros: 300,
+      S: 360, envergadura: 60, cuerda: 6.5,
+      inercia: { cabeceo: 4000000, guinada: 7000000, alabeo: 3000000 },
+      masaVacio: 120000, kgPorLitro: 0.8, combustible: 115000, consumo: 6,
+      potencia: 200000000, empujeEstatico: 660000, empujeRalenti: 25000,
+      estela: 0, parHelice: 0, cola: 1.2, rpmMax: 100, clFlaps: 1.1,
+      velocidadMando: 150,
+      ruedas: [
+        { r: [0, -4.85, -23], k: 1500000, c: 250000, morro: true },
+        { r: [-5.5, -4.9, 1.5], k: 6500000, c: 900000, freno: true },
+        { r: [5.5, -4.9, 1.5], k: 6500000, c: 900000, freno: true },
+        { r: [0, -0.4, 28.5], k: 6000000, c: 1200000, patin: true },
+      ],
+      choque: [[0, -2.2, -29], [-30, 0.3, 6], [30, 0.3, 6]],
+      arcos: { maximo: 350, flapsDesde: 110, flapsHasta: 200, verdeDesde: 135, amarilloDesde: 300, rojoDesde: 330 },
+      camara: { cabina: [0, 1.6, -25.5], atras: 105, arriba: 19, mira: 6 },
+      // Configuración estabilizada en la senda de 3° (medida con un piloto automático de prueba).
+      aproximacion: { nudos: 135, acelerador: 0.14, flaps: 1, trim: 0.1 }, rotacion: 150,
+    },
     // Turbohélice regional de la aerolínea: ala alta, dos motores, 48 pasajeros.
     regional: {
       nombre: 'Albatros 72', pasajeros: 48,
       S: 70, envergadura: 27, cuerda: 2.6,
       inercia: { cabeceo: 120000, guinada: 260000, alabeo: 110000 },
-      masaVacio: 12000, kgPorLitro: 0.8, combustible: 2000, consumo: 0.25,
+      masaVacio: 12000, kgPorLitro: 0.8, combustible: 2300, consumo: 0.25,
       potencia: 4000000, empujeEstatico: 70000, empujeRalenti: 2000,
-      estela: 0, parHelice: 0, cola: 1.2, rpmMax: 1200,
+      estela: 0, parHelice: 0, cola: 1.2, rpmMax: 1200, clFlaps: 0.45,
+      camara: { cabina: [0, 0.95, -11.2], atras: 46, arriba: 8.5, mira: 2.5 },
+      aproximacion: { nudos: 125, acelerador: 0.15, flaps: 2 / 3, trim: 0.16 }, rotacion: 110,
       velocidadMando: 115, // nudos a partir de los que se limita el recorrido del elevador con teclas
       ruedas: [
         { r: [0, -2.05, -9.5], k: 400000, c: 60000, morro: true },
@@ -34,7 +57,9 @@
       inercia: { cabeceo: 1825, guinada: 2670, alabeo: 1290 },
       masaVacio: 790, kgPorLitro: 0.72, combustible: 110, consumo: 0.012,
       potencia: 134000, empujeEstatico: 3000, empujeRalenti: 130,
-      estela: 350, parHelice: 90, cola: 0.7, rpmMax: 2700,
+      estela: 350, parHelice: 90, cola: 0.7, rpmMax: 2700, clFlaps: 0.45,
+      camara: { cabina: [0, 1.28, -0.25], atras: 15, arriba: 3.6, mira: 1 },
+      aproximacion: { nudos: 70, acelerador: 0.23, flaps: 2 / 3, trim: 0.17 }, rotacion: 60,
       velocidadMando: 62,
       ruedas: [
         { r: [0, -1.3, -1.6], k: 45000, c: 5000, morro: true },
@@ -71,10 +96,10 @@
     return t * t * (3 - 2 * t);
   }
 
-  function coeficienteSustentacion(alfa, flaps) {
+  function coeficienteSustentacion(alfa, flaps, clFlaps) {
     const alfaEntrada = rad(15 - 2 * flaps);
     const perdida = suave(alfaEntrada, alfaEntrada + rad(6), Math.abs(alfa));
-    const lineal = 0.26 + 0.45 * flaps + 5 * alfa;
+    const lineal = 0.26 + clFlaps * flaps + 5 * alfa;
     return { cl: lineal * (1 - perdida) + 1.15 * Math.sin(2 * alfa) * perdida, perdida, alfaEntrada };
   }
 
@@ -135,7 +160,7 @@
     const vRef = Math.max(V, 8);
 
     const fb = [0, 0, 0];
-    const sust = coeficienteSustentacion(alfa, e.flaps);
+    const sust = coeficienteSustentacion(alfa, e.flaps, A.clFlaps);
     const { perdida, alfaEntrada } = sust;
     // Efecto suelo: a menos de una envergadura del suelo el ala sustenta más y frena menos.
     const sobreSuelo = e.p[1] - Math.max(mundo.altura(e.p[0], e.p[2]), 0) - A.alturaEnTierra;

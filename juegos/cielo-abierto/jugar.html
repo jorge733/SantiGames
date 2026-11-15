@@ -110,6 +110,32 @@
     </div>
   </section>
 
+  <section id="crucero" class="pantalla" hidden>
+    <div class="caja ancha caja-crucero">
+      <p class="sub" id="c-vuelo"></p>
+      <h2 id="c-ruta"></h2>
+      <canvas id="mapa" aria-label="Mapa de la ruta"></canvas>
+      <div class="cuentas">
+        <div><span>Falta</span><strong id="c-falta"></strong></div>
+        <div><span>Tiempo de vuelo</span><strong id="c-tiempo"></strong></div>
+        <div><span>Altitud de crucero</span><strong id="c-altitud"></strong></div>
+        <div><span>Pasajeros</span><strong id="c-pasajeros"></strong></div>
+      </div>
+      <div id="c-evento" hidden>
+        <p id="c-evento-texto"></p>
+        <div class="botones-evento">
+          <button type="button" id="c-opcion-a" class="principal"></button>
+          <button type="button" id="c-opcion-b"></button>
+        </div>
+      </div>
+      <p id="c-mensaje" class="nota"></p>
+      <div class="botones-evento">
+        <button type="button" id="c-acelerar">Acelerar ×4</button>
+        <button type="button" id="c-saltar" class="principal">Ir al aterrizaje</button>
+      </div>
+    </div>
+  </section>
+
   <section id="pausa" class="pantalla" hidden>
     <div class="caja">
       <h2>Pausa</h2>
@@ -131,6 +157,9 @@
   </section>
 
   <script src="vendor/three.min.js"></script>
+  <script src="js/destinos.js"></script>
+  <script src="js/mapa-tierra.js"></script>
+  <script src="js/mapa.js"></script>
   <script src="js/terreno.js"></script>
   <script src="js/fisica.js"></script>
   <script src="js/mundo.js"></script>

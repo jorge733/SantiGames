@@ -38,6 +38,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; col
 .mision .datos { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12.5px; color: #f5f1e6; font-variant-numeric: tabular-nums; }
 .mision:disabled { cursor: default; opacity: 0.6; transform: none; }
 .mision.actual { outline: 2px solid #f7c35f; outline-offset: -2px; }
+.caja-crucero h2 { margin-bottom: 6px !important; }
+#mapa { display: block; width: 100%; height: min(46vh, 380px); margin: 6px 0 10px; background: #1f4f7a; }
+#c-evento { margin-top: 10px; padding: 12px 14px; background: #3a4d78; }
+#c-evento p { margin: 0 0 8px; }
+.botones-evento { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.botones-evento button { flex: 1 1 160px; padding: 10px; background: #2b3a5c; font-weight: 700; }
+.botones-evento button.principal { background: #ff7a45; color: #2a1208; }
 #fin-cuentas { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 #fin-cuentas td { padding: 4px 0; border-bottom: 1px solid #33415f; }
 #fin-cuentas td:last-child { text-align: right; white-space: nowrap; padding-left: 10px; }
@@ -113,6 +120,19 @@ body.tactil #aviso { font-size: 13px; }
   #fin-cuentas { font-size: 13px; }
   #fin-cuentas td { padding: 2px 0; }
   .caja > button { padding: 9px; }
+}
+@media (max-height: 460px) {
+  #mapa { height: 38vh; margin: 4px 0 6px; }
+  .caja-crucero .sub { margin: 0; font-size: 12px; }
+  .caja-crucero h2 { font-size: 18px !important; margin: 0 0 2px !important; }
+  .caja-crucero .cuentas { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .caja-crucero .cuentas span { font-size: 10.5px; }
+  .caja-crucero .cuentas strong { font-size: 13px; }
+  .caja-crucero .cuentas div { padding: 4px 8px; }
+  #c-mensaje { margin: 4px 0 0; font-size: 12px; }
+  #c-evento { margin-top: 6px; padding: 8px 10px; font-size: 13px; }
+  .botones-evento { margin-top: 6px; }
+  .botones-evento button { padding: 7px; }
 }
 @media (max-height: 360px) {
   #tactil button { min-height: 32px; }

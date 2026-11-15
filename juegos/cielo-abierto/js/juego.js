@@ -1,7 +1,7 @@
 // Bucle principal: mandos, cámaras, misiones, sonido e interfaz.
 (function () {
   'use strict';
-  const T = window.Terreno, F = window.Fisica, P = window.Pasajeros, AL = window.Aerolinea;
+  const T = window.Terreno, F = window.Fisica, P = window.Pasajeros, AL = window.Aerolinea, DS = window.Destinos;
   const PASO = 1 / 240;
   const $ = (id) => document.getElementById(id);
 
@@ -22,6 +22,15 @@
   function leerSeguro(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function guardarSeguro(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* sin almacenamiento */ } }
   const aerolinea = AL.cargar(almacen);
+  // Escenario 3D actual: código de un destino real, o null para la isla de práctica.
+  let escenarioActual;
+  function ponerEscenario(codigo) {
+    if (escenarioActual === codigo) return;
+    escenarioActual = codigo;
+    T.configurar(codigo ? DS.buscar(codigo) : null);
+    mundo3d.reconstruir();
+  }
+  const nombreDe = (codigo) => { const d = DS.buscar(codigo); return `${d.ciudad} (${d.codigo})`; };
   let estado = 'menu', e = null, mision = null, indicePaso = 0, modoCamara = 0, acumulado = 0, ultimo = performance.now();
   const mundo = { altura: T.altura, viento: [0, 0, 0], turbulencia: 0 };
   const mando = { acelerador: 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: 0, trim: 0, freno: 0 };
@@ -142,6 +151,7 @@
   });
   window.addEventListener('keyup', (ev) => teclas.delete(ev.code));
   window.addEventListener('blur', () => { soltarMandos(); if (estado === 'vuelo') pausar(true); });
+  // (en el crucero no hace falta pausar: el piloto automático sigue y el mapa espera)
   document.addEventListener('visibilitychange', () => { if (document.hidden) { soltarMandos(); if (estado === 'vuelo') pausar(true); } });
 
   // ---- Mandos táctiles ----
@@ -356,15 +366,16 @@
     $('a-saldo').textContent = AL.dinero(a.saldo);
     $('a-saldo').classList.toggle('negativo', a.saldo < 0);
     $('a-reputacion').textContent = a.reputacion + ' / 100';
-    $('a-ubicacion').textContent = AL.PUERTOS[a.ubicacion];
+    $('a-ubicacion').textContent = nombreDe(a.ubicacion);
     $('a-vuelos').textContent = String(a.vuelos);
     const salidas = $('salidas');
     salidas.textContent = '';
     for (const o of AL.salidas(a)) {
-      const avion = AL.FLOTA[o.avion];
-      salidas.append(tarjeta(`${o.hora} · ${o.numero}`, o.clima.nombre, o.nombre,
+      const avion = AL.FLOTA[o.avion], destino = DS.buscar(o.destino);
+      salidas.append(tarjeta(`${o.hora} · ${o.numero} → ${destino.ciudad}`, `${destino.pais} · ${o.clima.nombre}`,
+        `${AL.km(o.distancia)} · ${AL.duracion(o.horas)} de vuelo`,
         [avion.nombre, `${o.pasajeros}/${avion.plazas} pasajeros`, `${AL.dinero(o.precio)} el billete`],
-        () => empezar(AL.mision(o, F.AVIONES[o.avion].alturaEnTierra, aeropuerto))));
+        () => empezarVuelo(o)));
     }
     const hangar = $('hangar');
     hangar.textContent = '';
@@ -372,12 +383,13 @@
       const tiene = a.flota.includes(clave);
       let nivel, accion = null;
       if (tiene && a.avion === clave) nivel = 'En servicio';
+      else if (tiene && !AL.tieneAlcance(a, clave)) nivel = 'No tiene alcance para salir de aquí';
       else if (tiene) { nivel = 'Toca para usarlo'; accion = () => { AL.usar(a, clave); AL.guardar(almacen, a); pintarAerolinea(); }; }
       else if (a.saldo >= avion.precio) {
         nivel = `Comprar por ${AL.dinero(avion.precio)}`;
         accion = () => { if (AL.comprar(a, clave)) { AL.guardar(almacen, a); avisar(`¡Has comprado el ${avion.nombre}!`, 3000); pintarAerolinea(); } };
       } else nivel = `Cuesta ${AL.dinero(avion.precio)}: te faltan ${AL.dinero(avion.precio - a.saldo)}`;
-      const b = tarjeta(avion.nombre, nivel, avion.descripcion, [`${avion.plazas} plazas`], accion);
+      const b = tarjeta(avion.nombre, nivel, avion.descripcion, [`${avion.plazas} plazas`, `alcance ${AL.km(avion.alcance)}`], accion);
       if (tiene && a.avion === clave) b.classList.add('actual');
       hangar.append(b);
     }
@@ -390,6 +402,7 @@
       $(panel).hidden = !activa;
     }
     guardar('cielo-abierto:pestana', cual);
+    if (estado === 'menu') ponerEscenario(cual === 'aerolinea' ? aerolinea.ubicacion : null);
   }
   $('tab-aerolinea').addEventListener('click', () => elegirPestana('aerolinea'));
   $('tab-practica').addEventListener('click', () => elegirPestana('practica'));
@@ -408,12 +421,12 @@
       const est = document.createElement('span'); est.className = 'estrellas';
       est.textContent = m.pasos.length ? pintaEstrellas(estrellasDe(m.id)) : '';
       b.append(titulo, nivel, desc, est);
-      b.addEventListener('click', () => empezar(m));
+      b.addEventListener('click', () => { vuelo = null; ponerEscenario(null); empezar(m); });
       lista.append(b);
     }
   }
 
-  function empezar(m) {
+  function empezar(m, continuar) {
     iniciarSonido();
     pantallaCompleta();
     if (tactil && leer('cielo-abierto:inclinar') === '1' && !inclinacion.escuchando) activarInclinacion(true, false);
@@ -421,7 +434,8 @@
     mision = m;
     indicePaso = 0;
     const op = m.inicio;
-    pasajeros = P.crear(m.pasajeros || 0);
+    if (!continuar) pasajeros = P.crear(m.pasajeros || 0);
+    else { pasajeros.vAnterior = null; pasajeros.tInicio = undefined; pasajeros.toqueVisto = null; }
     e = F.crearEstado(Object.assign({ avion: m.avion }, op, { carga: pasajeros.carga }));
     combustibleInicial = e.combustible;
     mundo.viento = m.viento;
@@ -436,8 +450,137 @@
     $('consejo').textContent = (tactil && m.consejoTactil) || m.consejo;
     actualizarObjetivo();
     textoPasajeros = '';
-    if (pasajeros.cantidad) avisar(`Bienvenidos a bordo del ${e.modelo.nombre}: ${pasajeros.cantidad} pasajeros, entre ellos ${P.lista(pasajeros.nombres)}`, 3500);
+    if (m.aviso) avisar(m.aviso, 4000);
+    else if (pasajeros.cantidad) avisar(`Bienvenidos a bordo del ${e.modelo.nombre}: ${pasajeros.cantidad} pasajeros, entre ellos ${P.lista(pasajeros.nombres)}`, 3500);
     lienzo.focus();
+  }
+
+  // ---- Vuelos de la aerolínea: salida en el origen, crucero en el mapa y llegada al destino ----
+  let vuelo = null;
+  const ALTURA_SALIDA = { avioneta: 250, regional: 400, jet: 550 };
+  const ALTITUD_CRUCERO = { avioneta: '2.400 m', regional: '7.000 m', jet: '11.000 m' };
+
+  function empezarVuelo(oferta) {
+    const origen = DS.buscar(oferta.origen), destino = DS.buscar(oferta.destino), A = F.AVIONES[oferta.avion];
+    ponerEscenario(oferta.origen);
+    const ap = T.AEROPUERTOS[0];
+    vuelo = { oferta, gastado: 0, fase: 'salida' };
+    empezar({
+      id: 'aerolinea', nombre: `Vuelo ${oferta.numero}`, avion: oferta.avion, pasajeros: oferta.pasajeros, aerolinea: oferta, fase: 'salida',
+      consejo: `Despega hacia el norte (rota a unos ${A.rotacion} nudos) y cruza el aro de salida: después el piloto automático lleva el avión hasta ${destino.ciudad}.`,
+      inicio: { p: [ap.x, ap.y + A.alturaEnTierra, ap.z + ap.mitadLargo - 60], enTierra: true, combustible: oferta.combustible },
+      viento: oferta.viento, turbulencia: oferta.clima.turbulencia,
+      pasos: [{ tipo: 'punto', nombre: `Salida de ${origen.ciudad}`, x: ap.x, y: ap.y + ALTURA_SALIDA[oferta.avion], z: ap.z - ap.mitadLargo - 4500 }],
+      aviso: `Vuelo ${oferta.numero} de ${origen.ciudad} a ${destino.ciudad}: ${oferta.pasajeros} pasajeros a bordo`,
+    });
+  }
+
+  function iniciarCrucero() {
+    const o = vuelo.oferta, origen = DS.buscar(o.origen), destino = DS.buscar(o.destino), flota = AL.FLOTA[o.avion];
+    vuelo.gastado += Math.max(0, combustibleInicial - e.combustible);
+    vuelo.fase = 'crucero';
+    estado = 'crucero';
+    actualizarSonido(null, false);
+    mundo3d.colocarAro(null);
+    // Entre 10 y 35 segundos según la distancia; se puede acelerar o saltar.
+    vuelo.crucero = { t: 0, duracion: Math.max(10, Math.min(35, 6 + Math.sqrt(o.distancia) * 0.32)), rapido: 1, evento: null, hechos: {} };
+    vuelo.crucero.litros = o.distancia * flota.litroKm;
+    $('c-vuelo').textContent = `Vuelo ${o.numero} · ${flota.nombre} · piloto automático`;
+    $('c-ruta').textContent = `${origen.ciudad} → ${destino.ciudad}`;
+    $('c-altitud').textContent = ALTITUD_CRUCERO[o.avion];
+    $('c-evento').hidden = true;
+    $('c-mensaje').textContent = 'Crucero estable. Los pasajeros se acomodan.';
+    $('c-acelerar').textContent = 'Acelerar ×4';
+    pantalla('crucero');
+    $('hud').hidden = true;
+    const lienzoMapa = $('mapa'), r = Math.min(window.devicePixelRatio, 2);
+    lienzoMapa.width = lienzoMapa.clientWidth * r;
+    lienzoMapa.height = lienzoMapa.clientHeight * r;
+    pintarCrucero();
+  }
+
+  function pintarCrucero() {
+    const o = vuelo.oferta, c = vuelo.crucero, lienzoMapa = $('mapa'), ctxMapa = lienzoMapa.getContext('2d');
+    const r = lienzoMapa.width / Math.max(1, lienzoMapa.clientWidth);
+    ctxMapa.setTransform(r, 0, 0, r, 0, 0);
+    window.Mapa.dibujar(ctxMapa, lienzoMapa.clientWidth, lienzoMapa.clientHeight, DS.buscar(o.origen), DS.buscar(o.destino), c.t);
+    $('c-falta').textContent = AL.km(o.distancia * (1 - c.t));
+    $('c-tiempo').textContent = `${AL.duracion(o.horas * c.t)} de ${AL.duracion(o.horas)}`;
+    $('c-pasajeros').textContent = `${P.cara(pasajeros.comodidad)} ${Math.round(pasajeros.comodidad)}%`;
+  }
+
+  // Sucesos del crucero: el servicio a bordo y, a veces, una zona de turbulencia con decisión.
+  function sucesosCrucero() {
+    const c = vuelo.crucero, o = vuelo.oferta;
+    if (c.t > 0.3 && !c.hechos.servicio) {
+      c.hechos.servicio = true;
+      pasajeros.comodidad = Math.min(100, pasajeros.comodidad + 4);
+      $('c-mensaje').textContent = o.horas > 3 ? 'Servicio a bordo: comida caliente y una película. Los pasajeros están más cómodos.' : 'Servicio a bordo: café y galletas. Los pasajeros están más cómodos.';
+    }
+    if (c.t > 0.55 && !c.hechos.turbulencia) {
+      c.hechos.turbulencia = true;
+      if (o.distancia > 300 && (o.numero.charCodeAt(4) % 2 === 0 || o.clima.turbulencia > 0.3)) {
+        c.evento = 'turbulencia';
+        $('c-evento-texto').textContent = 'El radar muestra una zona de turbulencia en la ruta. ¿Qué hacemos?';
+        $('c-opcion-a').textContent = 'Rodearla (+5 % de combustible)';
+        $('c-opcion-b').textContent = 'Atravesarla (los pasajeros lo notarán)';
+        $('c-evento').hidden = false;
+      }
+    }
+  }
+
+  function decidir(rodear) {
+    const c = vuelo.crucero;
+    if (c.evento !== 'turbulencia') return;
+    if (rodear) { c.litros *= 1.05; $('c-mensaje').textContent = 'Rodeamos la turbulencia: un poco más de combustible, pero vuelo tranquilo.'; }
+    else { pasajeros.comodidad = Math.max(0, pasajeros.comodidad - 12); $('c-mensaje').textContent = '¡Baches! Se cayeron algunos vasos, pero ya pasó.'; }
+    c.evento = null;
+    $('c-evento').hidden = true;
+  }
+  $('c-opcion-a').addEventListener('click', () => decidir(true));
+  $('c-opcion-b').addEventListener('click', () => decidir(false));
+  $('c-acelerar').addEventListener('click', () => {
+    if (!vuelo || !vuelo.crucero) return;
+    vuelo.crucero.rapido = vuelo.crucero.rapido === 1 ? 4 : 1;
+    $('c-acelerar').textContent = vuelo.crucero.rapido === 1 ? 'Acelerar ×4' : 'Velocidad normal';
+  });
+  $('c-saltar').addEventListener('click', () => { if (vuelo && vuelo.fase === 'crucero') { if (vuelo.crucero.evento) decidir(true); terminarCrucero(); } });
+
+  function avanzarCrucero(dt) {
+    const c = vuelo.crucero;
+    if (!c.evento) c.t = Math.min(1, c.t + (dt * c.rapido) / c.duracion);
+    sucesosCrucero();
+    pintarCrucero();
+    if (c.t >= 1 && !c.evento) terminarCrucero();
+  }
+
+  function terminarCrucero() {
+    const c = vuelo.crucero;
+    c.t = 1;
+    vuelo.gastado += c.litros;
+    iniciarLlegada();
+  }
+
+  function iniciarLlegada() {
+    const o = vuelo.oferta, destino = DS.buscar(o.destino), A = F.AVIONES[o.avion], ap0 = A.aproximacion;
+    ponerEscenario(o.destino);
+    vuelo.fase = 'llegada';
+    const ap = T.AEROPUERTOS[0];
+    // Empieza estabilizado en la senda de 3°, a 9 km del umbral.
+    const distancia = 9000, umbral = ap.z + ap.mitadLargo;
+    const v = ap0.nudos / 1.94384, senda = 3 * RAD;
+    const restante = Math.max(A.combustible * 0.03, o.combustible - vuelo.gastado);
+    empezar({
+      id: 'aerolinea', nombre: `Vuelo ${o.numero}`, avion: o.avion, pasajeros: o.pasajeros, aerolinea: o, fase: 'llegada',
+      consejo: `Mantén unos ${ap0.nudos} nudos y sigue las luces PAPI: dos blancas y dos rojas. Antes de tocar, quita gas y levanta un poco el morro.`,
+      inicio: {
+        p: [ap.x, ap.y + (distancia + 300) * Math.tan(senda), umbral + distancia], v: [0, -v * Math.sin(senda), -v * Math.cos(senda)],
+        acelerador: ap0.acelerador, motor: 0.12 + 0.88 * ap0.acelerador, flaps: ap0.flaps, flapsMando: ap0.flaps, trim: ap0.trim, combustible: restante,
+      },
+      viento: o.viento, turbulencia: o.clima.turbulencia,
+      pasos: [{ tipo: 'aterrizar', aeropuerto: ap.id }],
+      aviso: `Bienvenidos a ${destino.ciudad}, ${destino.pais}. Preparados para aterrizar.`,
+    }, true);
   }
 
   function pausar(si) {
@@ -484,16 +627,18 @@
     $('fin-estrellas').textContent = exito ? pintaEstrellas(estrellas) : '';
     const cuentas = $('fin-cuentas');
     cuentas.hidden = !mision.aerolinea;
-    const llego = resultado === 'ok' || resultado === 'fuera' || (exito && !resultado);
-    $('b-reintentar').hidden = !!mision.aerolinea && llego;
+    $('b-reintentar').hidden = !!mision.aerolinea;
     $('b-menu-fin').textContent = mision.aerolinea ? 'Ir al tablero de salidas' : 'Elegir otra misión';
     $('b-reintentar').classList.toggle('principal', !$('b-reintentar').hidden);
-    $('b-menu-fin').classList.toggle('principal', !!mision.aerolinea && llego);
+    $('b-menu-fin').classList.toggle('principal', !!mision.aerolinea);
     if (mision.aerolinea) {
-      const r = AL.liquidar(aerolinea, mision.aerolinea, {
+      const o = mision.aerolinea;
+      const r = AL.liquidar(aerolinea, o, {
         resultado: resultado || (exito ? 'ok' : 'choque'), estrellas, comodidad: pasajeros.comodidad,
-        combustible: Math.max(0, combustibleInicial - e.combustible),
+        combustible: (vuelo ? vuelo.gastado : 0) + Math.max(0, combustibleInicial - e.combustible),
+        lugar: mision.fase === 'llegada' ? o.destino : o.origen,
       });
+      vuelo = null;
       AL.guardar(almacen, aerolinea);
       const cuerpo = cuentas.querySelector('tbody');
       cuerpo.textContent = '';
@@ -508,6 +653,7 @@
       const cambio = r.reputacion - r.reputacionAntes;
       fila(`Reputación ${cambio >= 0 ? '+' : '−'}${Math.abs(cambio)}`, `${r.reputacion} / 100`);
       fila('Saldo de la aerolínea', AL.dinero(r.saldo));
+      fila('El avión está en', nombreDe(aerolinea.ubicacion));
     }
     pintarMenu();
     pantalla('fin');
@@ -526,7 +672,7 @@
     const centro = Math.abs(toque.x - a.x);
     const desdeUmbral = a.z + a.mitadLargo - toque.z;
     if (!T.enPista(a, e.p[0], e.p[2])) {
-      if (Math.hypot(e.p[0] - a.x, e.p[2] - a.z) > 1500) {
+      if (Math.hypot(Math.max(0, Math.abs(e.p[0] - a.x) - a.mitadAncho), Math.max(0, Math.abs(e.p[2] - a.z) - a.mitadLargo)) > 1500) {
         terminar(false, 'Aterrizaje en el campo', `Todos están bien, pero el avión se ha detenido lejos de ${a.nombre}.`, 0, 'campo');
       } else {
         terminar(false, 'Fuera de pista', 'Todos están sanos y salvos, pero el avión no se ha detenido en la pista y los pasajeros tendrán que caminar hasta la terminal.', 0, 'fuera');
@@ -535,7 +681,9 @@
     }
     let puntos = fpm < 120 ? 50 : fpm < 250 ? 40 : fpm < 400 ? 25 : 10;
     puntos += centro < 5 ? 30 : centro < 15 ? 20 : 5;
-    puntos += desdeUmbral > 0 && desdeUmbral < 500 ? 20 : desdeUmbral < 900 ? 10 : 0;
+    // Zona de toque: proporcional a la pista (los jets tocan más lejos del umbral que la avioneta).
+    const zona = Math.max(500, a.mitadLargo * 0.4);
+    puntos += desdeUmbral > 0 && desdeUmbral < zona ? 20 : desdeUmbral < zona * 1.8 ? 10 : 0;
     const estrellas = puntos >= 80 ? 3 : puntos >= 55 ? 2 : 1;
     terminar(true, mision.aerolinea ? `Vuelo ${mision.aerolinea.numero} completado` : 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
   }
@@ -558,6 +706,7 @@
     if (!hecho) return;
     indicePaso++;
     if (indicePaso >= mision.pasos.length) {
+      if (mision.fase === 'salida') { iniciarCrucero(); return; }
       terminar(true, 'Misión completada', '¡Buen trabajo! Has alcanzado el objetivo.', 3, 'ok');
       return;
     }
@@ -579,17 +728,19 @@
     qAvion.set(e.q[0], e.q[1], e.q[2], e.q[3]);
     if (modoCamara === 1) {
       camara.fov = 68;
-      vA.set(0, 0.95, -11.2).applyQuaternion(qAvion).add(vP);
+      const cam = e.modelo.camara;
+      vA.set(cam.cabina[0], cam.cabina[1], cam.cabina[2]).applyQuaternion(qAvion).add(vP);
       camara.position.copy(vA);
       camara.quaternion.copy(qAvion);
     } else if (modoCamara === 0) {
       camara.fov = 62;
       qCam.slerp(qAvion, 1 - Math.exp(-5 * dt));
-      vA.set(0, 8.5, 46).applyQuaternion(qCam).add(vP);
+      const cam = e.modelo.camara;
+      vA.set(0, cam.arriba, cam.atras).applyQuaternion(qCam).add(vP);
       vA.y = Math.max(vA.y, Math.max(T.altura(vA.x, vA.z), 0) + 2);
       camara.position.copy(vA);
       camara.up.set(0, 1, 0).applyQuaternion(qCam);
-      camara.lookAt(vB.set(0, 2.5, -70).applyQuaternion(qCam).add(vP));
+      camara.lookAt(vB.set(0, cam.mira, -cam.atras * 1.5).applyQuaternion(qCam).add(vP));
     } else {
       let cerca = T.AEROPUERTOS[0];
       for (const a of T.AEROPUERTOS) if (Math.hypot(a.x - e.p[0], a.z - e.p[2]) < Math.hypot(cerca.x - e.p[0], cerca.z - e.p[2])) cerca = a;
@@ -625,14 +776,18 @@
     const dt = Math.min(0.05, (ahora - ultimo) / 1000);
     ultimo = ahora;
 
+    if (estado === 'crucero') { avanzarCrucero(dt); return; }
+
     if (estado === 'menu' || !e) {
       angulo += dt * 0.06;
+      const ap = T.AEROPUERTOS[0], radio = T.destino ? 3800 : 2600;
       camara.fov = 55;
       camara.up.set(0, 1, 0);
-      camara.position.set(Math.sin(angulo) * 2600, 520, 900 + Math.cos(angulo) * 2600);
-      camara.lookAt(0, 90, -500);
+      camara.position.set(ap.x + Math.sin(angulo) * radio, ap.y + 490, ap.z + 900 + Math.cos(angulo) * radio);
+      camara.lookAt(ap.x, ap.y + 60, ap.z - 500);
       camara.updateProjectionMatrix();
-      const vistaMenu = F.crearEstado({ p: [0, 30 + F.AVIONES.regional.alturaEnTierra, 650], enTierra: true });
+      const avionMenu = T.destino ? aerolinea.avion : 'regional';
+      const vistaMenu = F.crearEstado({ avion: avionMenu, p: [ap.x, ap.y + F.AVIONES[avionMenu].alturaEnTierra, ap.z + ap.mitadLargo - 50], enTierra: true });
       mundo3d.actualizar(vistaMenu, mando, camara, mundo.viento);
       render.render(escena, camara);
       return;
@@ -670,21 +825,32 @@
   }
 
   $('b-seguir').addEventListener('click', () => { if (tactil && window.innerHeight > window.innerWidth) return; pausar(false); });
-  $('b-reiniciar').addEventListener('click', () => empezar(mision));
+  $('b-reiniciar').addEventListener('click', () => {
+    if (vuelo && mision.fase === 'llegada') iniciarLlegada();
+    else if (vuelo) empezarVuelo(vuelo.oferta);
+    else empezar(mision);
+  });
   $('b-menu').addEventListener('click', () => {
     if (mision && mision.aerolinea && estado === 'pausa') {
-      const r = AL.liquidar(aerolinea, mision.aerolinea, { resultado: 'abandono' });
+      const o = mision.aerolinea;
+      const r = AL.liquidar(aerolinea, o, {
+        resultado: 'abandono', combustible: (vuelo ? vuelo.gastado : 0) + Math.max(0, combustibleInicial - e.combustible),
+        lugar: mision.fase === 'llegada' ? o.destino : o.origen,
+      });
+      vuelo = null;
       AL.guardar(almacen, aerolinea);
       avisar(`Vuelo cancelado: reputación ${r.reputacion} / 100`, 3000);
     }
     volverMenu();
   });
-  $('b-reintentar').addEventListener('click', () => empezar(mision));
+  $('b-reintentar').addEventListener('click', () => { ponerEscenario(null); empezar(mision); });
   $('b-menu-fin').addEventListener('click', () => volverMenu());
 
   function volverMenu() {
     estado = 'menu';
     e = null;
+    vuelo = null;
+    ponerEscenario($('tab-practica').getAttribute('aria-selected') === 'true' ? null : aerolinea.ubicacion);
     mundo3d.colocarAro(null);
     actualizarSonido(null, false);
     pintarMenu();
@@ -696,7 +862,7 @@
   if (tactil) document.body.classList.add('tactil');
 
   // Enganche de solo lectura para pruebas automáticas.
-  window.__cieloAbierto = { get estado() { return estado; }, get avion() { return e; }, get pasoIndice() { return indicePaso; }, get aerolinea() { return aerolinea; }, get mando() { return mando; } };
+  window.__cieloAbierto = { get estado() { return estado; }, get avion() { return e; }, get pasoIndice() { return indicePaso; }, get aerolinea() { return aerolinea; }, get mando() { return mando; }, get vuelo() { return vuelo; }, get pasajeros() { return pasajeros; } };
 
   ajustar();
   pintarMenu();

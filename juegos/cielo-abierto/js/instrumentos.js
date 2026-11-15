@@ -165,7 +165,7 @@
     const tam = Math.max(9, r * 0.17), altoB = alto * 0.5, anchoB = pasoG * 0.2, by = alto * 0.25, sep = pasoG * 0.3;
     barra(x, cx, by, anchoB, altoB, e.acelerador, COL.coral, 'GAS', Math.round(e.acelerador * 100) + '%', tam);
     barra(x, cx + sep, by, anchoB, altoB, e.motor, COL.oro, 'RPM', String(Math.round(t.rpm / 10) * 10), tam);
-    barra(x, cx + sep * 2, by, anchoB, altoB, e.combustible / e.modelo.combustible, e.combustible < e.modelo.combustible * 0.12 ? COL.rojo : COL.verde, 'FUEL', Math.round(e.combustible) + ' L', tam);
+    barra(x, cx + sep * 2, by, anchoB, altoB, e.combustible / e.modelo.combustible, e.combustible < e.modelo.combustible * 0.05 ? COL.rojo : COL.verde, 'FUEL', Math.round(e.combustible) + ' L', tam);
     barra(x, cx + sep * 3, by, anchoB, altoB, e.flaps, COL.texto, 'FLAPS', Math.round(e.flaps * 30) + '°', tam);
     barra(x, cx + sep * 4, by, anchoB, altoB, (mando.trim + 0.6) / 1.2, COL.cielo, 'TRIM', (mando.trim > 0 ? '+' : '') + Math.round(mando.trim * 100), tam);
   }

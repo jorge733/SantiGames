@@ -7,7 +7,7 @@ window.SANTIGAMES = {
     {
       titulo: 'Cielo Abierto',
       genero: 'Simulador de vuelo 3D',
-      resumen: 'Pilota el Albatros 72, el turbohélice de la aerolínea Cielo Abierto: lleva a 48 pasajeros entre las montañas de una isla low-poly y aterriza tan suave que te aplaudan.',
+      resumen: 'Dirige tu aerolínea y vuela desde Santiago a 24 ciudades reales de Chile y del mundo: despega, cruza el mapa y aterriza tan suave que tus pasajeros te aplaudan.',
       estado: 'disponible',
       plataforma: 'Navegador · teclado o táctil',
       portada: 'juegos/cielo-abierto/portada.svg',
