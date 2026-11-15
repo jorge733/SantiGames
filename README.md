@@ -17,7 +17,7 @@ El catálogo de la página principal se actualiza solo.
 
 ## Juegos
 
-- **Cielo Abierto** (`juegos/cielo-abierto/`): simulador de vuelo 3D. Se juega con teclado o, en celular y tablet, con mandos táctiles en horizontal. Las misiones se editan en `js/misiones.js` (`consejoTactil` es el consejo que se muestra en pantallas táctiles).
+- **Cielo Abierto** (`juegos/cielo-abierto/`): simulador de vuelo 3D de una aerolínea con pasajeros. Su comodidad (`js/pasajeros.js`) baja con maniobras bruscas y aterrizajes duros, y limita las estrellas. Se juega con teclado o, en celular y tablet, con mandos táctiles en horizontal. Las misiones se editan en `js/misiones.js` (`consejoTactil` es el consejo que se muestra en pantallas táctiles).
 
 ## Créditos
 

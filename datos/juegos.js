@@ -7,7 +7,7 @@ window.SANTIGAMES = {
     {
       titulo: 'Cielo Abierto',
       genero: 'Simulador de vuelo 3D',
-      resumen: 'Pilota una avioneta sobre una isla low-poly: despega, cruza las montañas y demuestra que sabes aterrizar.',
+      resumen: 'Pilota la avioneta de la aerolínea Cielo Abierto sobre una isla low-poly: lleva a tus pasajeros entre montañas y aterriza tan suave que te aplaudan.',
       estado: 'disponible',
       plataforma: 'Navegador · teclado o táctil',
       portada: 'juegos/cielo-abierto/portada.svg',

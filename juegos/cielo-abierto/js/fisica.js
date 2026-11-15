@@ -1,4 +1,4 @@
-// Modelo de vuelo de 6 grados de libertad de una avioneta ligera ficticia.
+// Modelo de vuelo de 6 grados de libertad de una avioneta ficticia de la aerolínea, con hasta 3 pasajeros.
 // Ejes del avión: X = derecha, Y = arriba, Z = atrás (el morro apunta a -Z).
 // Giros positivos: X = morro arriba, Y = morro a la izquierda, Z = alabeo a la izquierda.
 (function (raiz) {
@@ -8,7 +8,7 @@
   const S = 16.2, ENVERGADURA = 11, CUERDA = 1.5;
   const ALARGAMIENTO = (ENVERGADURA * ENVERGADURA) / S;
   const I_CABECEO = 1825, I_GUINADA = 2670, I_ALABEO = 1290;
-  const MASA_VACIO = 1000, KG_POR_LITRO = 0.72;
+  const MASA_VACIO = 790, KG_POR_LITRO = 0.72;
   const POTENCIA = 134000, EMPUJE_ESTATICO = 3000, RALENTI = 0.12;
 
   const RUEDAS = [
@@ -54,6 +54,7 @@
       motor: op.motor !== undefined ? op.motor : RALENTI,
       flaps: op.flaps || 0,
       combustible: op.combustible !== undefined ? op.combustible : 110,
+      carga: op.carga || 0, // kg de pasajeros y equipaje
       enTierra: !!op.enTierra,
       tiempoAire: op.enTierra ? 0 : 10,
       ultimoToque: null,
@@ -129,7 +130,7 @@
     if (perdida > 0.2) mb[2] += qd * S * ENVERGADURA * 0.012 * perdida * Math.sin(e.t * 1.7);
 
     const f = rotar(e.q, fb);
-    const masa = MASA_VACIO + e.combustible * KG_POR_LITRO;
+    const masa = MASA_VACIO + e.carga + e.combustible * KG_POR_LITRO;
     f[1] -= masa * G;
 
     // Tren de aterrizaje: muelles, frenos y dirección con la rueda de morro.

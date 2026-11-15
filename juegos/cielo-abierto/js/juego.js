@@ -1,7 +1,7 @@
 // Bucle principal: mandos, cámaras, misiones, sonido e interfaz.
 (function () {
   'use strict';
-  const T = window.Terreno, F = window.Fisica;
+  const T = window.Terreno, F = window.Fisica, P = window.Pasajeros;
   const PASO = 1 / 240;
   const $ = (id) => document.getElementById(id);
 
@@ -17,6 +17,7 @@
   const panel = $('panel');
   const ctxPanel = panel.getContext('2d');
 
+  let pasajeros = null, textoPasajeros = '';
   let estado = 'menu', e = null, mision = null, indicePaso = 0, modoCamara = 0, acumulado = 0, ultimo = performance.now();
   const mundo = { altura: T.altura, viento: [0, 0, 0], turbulencia: 0 };
   const mando = { acelerador: 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: 0, trim: 0, freno: 0 };
@@ -261,11 +262,11 @@
 
   // ---- Interfaz ----
   let temporizadorAviso = 0;
-  function avisar(texto) {
+  function avisar(texto, duracion) {
     $('aviso').textContent = texto;
     $('aviso').classList.add('visible');
     clearTimeout(temporizadorAviso);
-    temporizadorAviso = setTimeout(() => $('aviso').classList.remove('visible'), 1800);
+    temporizadorAviso = setTimeout(() => $('aviso').classList.remove('visible'), duracion || 1800);
   }
 
   function pantalla(id) {
@@ -296,7 +297,8 @@
     mision = m;
     indicePaso = 0;
     const op = m.inicio;
-    e = F.crearEstado(op);
+    pasajeros = P.crear(m.pasajeros || 0);
+    e = F.crearEstado(Object.assign({}, op, { carga: pasajeros.carga }));
     mundo.viento = m.viento;
     mundo.turbulencia = m.turbulencia;
     Object.assign(mando, { acelerador: op.acelerador || 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: op.flapsMando || 0, trim: op.trim || 0, freno: 0 });
@@ -308,6 +310,8 @@
     $('hud').hidden = false;
     $('consejo').textContent = (tactil && m.consejoTactil) || m.consejo;
     actualizarObjetivo();
+    textoPasajeros = '';
+    if (pasajeros.cantidad) avisar('Bienvenidos a bordo: ' + P.lista(pasajeros.nombres));
     lienzo.focus();
   }
 
@@ -342,6 +346,11 @@
 
   function terminar(exito, titulo, detalle, estrellas) {
     estado = 'fin';
+    if (exito && pasajeros.cantidad) {
+      const c = Math.round(pasajeros.comodidad);
+      estrellas = Math.min(estrellas, P.estrellas(c));
+      detalle += ` Pasajeros ${P.cara(c)} comodidad ${c}%. ${P.opinion(c)}`;
+    }
     actualizarSonido(null, false);
     mundo3d.colocarAro(null);
     if (exito && estrellas > estrellasDe(mision.id)) guardar('cielo-abierto:' + mision.id, String(estrellas));
@@ -365,7 +374,7 @@
     const centro = Math.abs(toque.x - a.x);
     const desdeUmbral = a.z + a.mitadLargo - toque.z;
     if (!T.enPista(a, e.p[0], e.p[2])) {
-      terminar(false, 'Fuera de pista', 'Has aterrizado sano y salvo, pero el avión no se ha detenido en la pista.', 0);
+      terminar(false, 'Fuera de pista', 'Todos están sanos y salvos, pero el avión no se ha detenido en la pista y los pasajeros tendrán que caminar hasta la terminal.', 0);
       return;
     }
     let puntos = fpm < 120 ? 50 : fpm < 250 ? 40 : fpm < 400 ? 25 : 10;
@@ -477,6 +486,8 @@
       leerMandos(dt);
       acumulado += dt;
       while (acumulado >= PASO) { F.paso(e, mando, mundo, PASO); acumulado -= PASO; }
+      const queja = P.actualizar(pasajeros, e, F.telemetria(e, mundo));
+      if (queja) avisar(queja, 3000);
       comprobarMision();
     }
 
@@ -496,6 +507,8 @@
     if (e.combustible <= 0 && mision.id !== 'sinmotor') adv.push('SIN COMBUSTIBLE');
     if (mando.freno) adv.push('FRENOS');
     $('alertas').textContent = adv.join('  ·  ');
+    const nuevoPasajeros = pasajeros.cantidad ? `${P.cara(pasajeros.comodidad)} ${pasajeros.cantidad} pasajeros · comodidad ${Math.round(pasajeros.comodidad)}%` : '';
+    if (nuevoPasajeros !== textoPasajeros) { textoPasajeros = nuevoPasajeros; $('pasajeros').textContent = nuevoPasajeros; }
     $('ruta').textContent = objetivo.rumbo === null ? `Altura sobre el suelo: ${Math.round(t.alturaSuelo)} m`
       : `Rumbo ${String(Math.round(objetivo.rumbo) % 360).padStart(3, '0')}° · ${(objetivo.dist / 1000).toFixed(1).replace('.', ',')} km · objetivo ${Math.round(objetivo.altura)} m · estás a ${Math.round(e.p[1])} m`;
   }
