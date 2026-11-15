@@ -23,6 +23,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; col
 .caja h2 { margin: 0 0 10px; font-size: 26px; color: #f7c35f; }
 .sub { margin: 0 0 14px; color: #b9c6dc; }
 .volver { color: #86d3ef; font-size: 14px; text-decoration: none; }
+.arriba-menu { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.instalar { padding: 6px 14px; background: #f7c35f; color: #2a1208; font-weight: 800; font-size: 14px; }
+.ayuda-ios { padding: 10px 12px; background: #2b3a5c; color: #f5f1e6; }
 .volver:hover { text-decoration: underline; }
 .lista-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .pestanas { display: flex; gap: 6px; margin: 12px 0 14px; }

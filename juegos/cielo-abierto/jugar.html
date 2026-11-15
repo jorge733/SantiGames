@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1f2a44">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Cielo Abierto · SantiGames</title>
-  <link rel="icon" href="../../assets/icono.svg" type="image/svg+xml">
+  <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cielo Abierto">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="juego.css">
 </head>
 <body>
@@ -62,7 +66,11 @@
 
   <section id="menu" class="pantalla" hidden>
     <div class="caja ancha">
-      <a class="volver" href="index.html">← Volver a la ficha del juego</a>
+      <div class="arriba-menu">
+        <a class="volver" href="index.html">← Volver a la ficha del juego</a>
+        <button type="button" class="instalar" data-instalar="ayuda-ios-juego" hidden>Instalar app</button>
+      </div>
+      <p id="ayuda-ios-juego" class="nota ayuda-ios" hidden>En iPhone o iPad: abre esta página en Safari, toca el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba) y elige <b>Añadir a pantalla de inicio</b>.</p>
       <h1>Cielo Abierto</h1>
       <div class="pestanas" role="tablist">
         <button type="button" role="tab" id="tab-aerolinea" aria-controls="panel-aerolinea">Aerolínea Benedetto</button>
@@ -167,6 +175,7 @@
   <script src="js/pasajeros.js"></script>
   <script src="js/aerolinea.js"></script>
   <script src="js/misiones.js"></script>
+  <script src="js/instalar.js"></script>
   <script src="js/juego.js"></script>
 </body>
 </html>

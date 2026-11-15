@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d7bd4"/><stop offset="0.62" stop-color="#86d3ef"/><stop offset="0.8" stop-color="#ffdcb4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#cielo)"/>
+  <polygon fill="#8d7f96" points="0,420 90,330 150,380 250,290 340,370 410,320 512,400 512,512 0,512"/>
+  <polygon fill="#f6f6ff" points="250,290 225,313 238,318 252,305 268,316 276,309"/>
+  <polygon fill="#6cbf52" points="0,450 120,410 230,440 340,405 512,445 512,512 0,512"/>
+  <polygon fill="#3f9a62" points="0,480 160,455 300,478 430,450 512,470 512,512 0,512"/>
+  <!-- Avión visto desde abajo, subiendo hacia la derecha -->
+  <g transform="translate(256 228) rotate(-28)">
+    <polygon fill="#fafaf2" points="-150,-12 -128,-22 120,-20 150,-6 150,6 120,20 -128,22 -150,12"/>
+    <polygon fill="#d9d9cf" points="-128,22 120,20 150,6 -150,12"/>
+    <polygon fill="#fafaf2" points="-10,-20 40,-20 -40,-150 -78,-150"/>
+    <polygon fill="#fafaf2" points="-10,20 40,20 -40,150 -78,150"/>
+    <polygon fill="#ee6c4d" points="-62,-150 -40,-150 -46,-136 -66,-136"/>
+    <polygon fill="#ee6c4d" points="-62,150 -40,150 -46,136 -66,136"/>
+    <polygon fill="#fafaf2" points="96,-18 122,-18 100,-66 84,-66"/>
+    <polygon fill="#fafaf2" points="96,18 122,18 100,66 84,66"/>
+    <polygon fill="#ee6c4d" points="104,-4 150,-4 150,4 104,4"/>
+    <ellipse cx="-24" cy="-62" rx="22" ry="11" fill="#ee6c4d"/>
+    <ellipse cx="-24" cy="62" rx="22" ry="11" fill="#ee6c4d"/>
+    <polygon fill="#f7c35f" points="-150,-5 -164,0 -150,5"/>
+  </g>
+</svg>

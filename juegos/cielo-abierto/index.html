@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cielo Abierto · SantiGames</title>
   <meta name="description" content="Simulador de vuelo 3D low-poly para jugar en el navegador.">
-  <link rel="icon" href="../../assets/icono.svg" type="image/svg+xml">
+  <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Cielo Abierto">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1f2a44">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Nunito:wght@400;700;800&display=swap">
@@ -27,7 +32,8 @@
       <div class="contenedor">
         <h1>Cielo Abierto</h1>
         <p>Dirige Benedetto, tu aerolínea, desde Santiago: vuela a 24 ciudades reales de Chile y del mundo, gana dinero con cada billete y amplía tu flota hasta el jet de largo alcance.</p>
-        <div class="acciones"><a class="boton principal" href="jugar.html">Jugar ahora</a></div>
+        <div class="acciones"><a class="boton principal" href="jugar.html">Jugar ahora</a><button type="button" class="boton" data-instalar="ayuda-ios-ficha" hidden>Instalar app</button></div>
+        <p id="ayuda-ios-ficha" class="aviso-escritorio" hidden>En iPhone o iPad: abre esta página en Safari, toca el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba) y elige <b>Añadir a pantalla de inicio</b>.</p>
         <p class="aviso-escritorio">Se juega en ordenador con teclado, o en el celular y la tablet con mandos táctiles (en horizontal).</p>
       </div>
     </section>
@@ -81,5 +87,6 @@
   <footer class="pie">
     <div class="contenedor"><p>SantiGames</p><p>Hecho con Claude Code · Gráficos 3D con three.js · Mapa: Natural Earth</p></div>
   </footer>
+  <script src="js/instalar.js"></script>
 </body>
 </html>

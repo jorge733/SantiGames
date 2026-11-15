@@ -1,0 +1,21 @@
+{
+  "name": "Cielo Abierto · Aerolínea Benedetto",
+  "short_name": "Cielo Abierto",
+  "description": "Simulador de vuelo de SantiGames: dirige la aerolínea Benedetto y vuela a ciudades reales de Chile y del mundo.",
+  "lang": "es",
+  "id": "./jugar.html",
+  "start_url": "./jugar.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#1f2a44",
+  "theme_color": "#1f2a44",
+  "categories": ["games"],
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-adaptable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "iconos/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
