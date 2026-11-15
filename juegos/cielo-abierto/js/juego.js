@@ -1,7 +1,7 @@
 // Bucle principal: mandos, cámaras, misiones, sonido e interfaz.
 (function () {
   'use strict';
-  const T = window.Terreno, F = window.Fisica, P = window.Pasajeros;
+  const T = window.Terreno, F = window.Fisica, P = window.Pasajeros, AL = window.Aerolinea;
   const PASO = 1 / 240;
   const $ = (id) => document.getElementById(id);
 
@@ -17,13 +17,17 @@
   const panel = $('panel');
   const ctxPanel = panel.getContext('2d');
 
-  let pasajeros = null, textoPasajeros = '';
+  let pasajeros = null, textoPasajeros = '', combustibleInicial = 0;
+  const almacen = { getItem: leerSeguro, setItem: guardarSeguro };
+  function leerSeguro(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+  function guardarSeguro(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* sin almacenamiento */ } }
+  const aerolinea = AL.cargar(almacen);
   let estado = 'menu', e = null, mision = null, indicePaso = 0, modoCamara = 0, acumulado = 0, ultimo = performance.now();
   const mundo = { altura: T.altura, viento: [0, 0, 0], turbulencia: 0 };
   const mando = { acelerador: 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: 0, trim: 0, freno: 0 };
   const teclas = new Set();
   // Estado de los mandos táctiles. palanca: -1..1 (x a la derecha, y hacia abajo = tirar).
-  const toque = { palancaX: 0, palancaY: 0, palanca: false, mantener: new Set() };
+  const toque = { palancaX: 0, palancaY: 0, palanca: false, mantener: new Set(), inclinar: false, inclinX: 0, inclinY: 0 };
   const qCam = new THREE.Quaternion();
 
   function guardar(clave, valor) { try { localStorage.setItem(clave, valor); } catch (_) { /* almacenamiento no disponible */ } }
@@ -91,6 +95,10 @@
       // La palanca táctil es proporcional: sigue al dedo casi sin retraso.
       mando.cabeceo = seguir(mando.cabeceo, curva(toque.palancaY) * recorrido, dt);
       mando.alabeo = seguir(mando.alabeo, curva(toque.palancaX), dt);
+    } else if (toque.inclinar && !cab && !alab) {
+      // Inclinación del celular: también proporcional, algo más suave para filtrar el temblor de las manos.
+      mando.cabeceo = seguir(mando.cabeceo, curva(toque.inclinY) * recorrido, dt * 0.6);
+      mando.alabeo = seguir(mando.alabeo, curva(toque.inclinX), dt * 0.6);
     } else {
       mando.cabeceo = acercar(mando.cabeceo, cab * recorrido, dt);
       mando.alabeo = acercar(mando.alabeo, alab, dt);
@@ -212,6 +220,58 @@
   alTocar('t-pausa', () => pausar(true));
   $('t-sonido').textContent = sonido.silencio ? 'Sin sonido' : 'Sonido';
 
+  // ---- Inclinación del celular ----
+  // Se calcula hacia dónde apunta "arriba" en coordenadas de la pantalla: girar el celular como un volante
+  // alabea, e inclinarlo hacia ti o hacia fuera sube o baja el morro. La posición al activarlo es la neutra.
+  const RAD = Math.PI / 180;
+  const inclinacion = { neutra: null, ultima: null, escuchando: false };
+  function arribaEnPantalla(beta, gamma) {
+    const b = beta * RAD, g = gamma * RAD;
+    const x = -Math.sin(g) * Math.cos(b), y = Math.sin(b), z = Math.cos(g) * Math.cos(b);
+    const giro = ((screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0) * RAD;
+    return { x: x * Math.cos(giro) - y * Math.sin(giro), y: x * Math.sin(giro) + y * Math.cos(giro), z };
+  }
+  function angulosInclinacion(beta, gamma) {
+    const u = arribaEnPantalla(beta, gamma);
+    return { volante: Math.atan2(-u.x, u.y), cabeceo: Math.atan2(u.z, Math.hypot(u.x, u.y)) };
+  }
+  const zonaMuerta = (v, z) => (Math.abs(v) < z ? 0 : (v - Math.sign(v) * z) / (1 - z));
+  function alInclinar(ev) {
+    if (ev.beta === null || ev.gamma === null || ev.beta === undefined) return;
+    const a = angulosInclinacion(ev.beta, ev.gamma);
+    inclinacion.ultima = a;
+    if (!inclinacion.neutra) inclinacion.neutra = a;
+    let dv = a.volante - inclinacion.neutra.volante;
+    if (dv > Math.PI) dv -= 2 * Math.PI; else if (dv < -Math.PI) dv += 2 * Math.PI;
+    const dc = a.cabeceo - inclinacion.neutra.cabeceo;
+    // 30° de volante y 20° de cabeceo dan todo el recorrido.
+    toque.inclinX = Math.max(-1, Math.min(1, zonaMuerta(dv / (30 * RAD), 0.08)));
+    toque.inclinY = Math.max(-1, Math.min(1, zonaMuerta(-dc / (20 * RAD), 0.1)));
+  }
+  function recalibrar() { inclinacion.neutra = inclinacion.ultima; toque.inclinX = 0; toque.inclinY = 0; }
+  function pintarBotonInclinar() {
+    $('t-inclinar').classList.toggle('activo', toque.inclinar);
+    $('t-inclinar').setAttribute('aria-pressed', String(toque.inclinar));
+  }
+  async function activarInclinacion(si, conAviso) {
+    if (si && !window.DeviceOrientationEvent) { avisar('Este aparato no tiene sensor de movimiento'); return; }
+    if (si && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iPhone y iPad piden permiso, y solo se puede pedir al tocar un botón.
+      let respuesta = 'denied';
+      try { respuesta = await DeviceOrientationEvent.requestPermission(); } catch (_) { /* rechazado */ }
+      if (respuesta !== 'granted') { avisar('Sin permiso para usar el sensor de movimiento', 3000); return; }
+    }
+    toque.inclinar = si;
+    guardar('cielo-abierto:inclinar', si ? '1' : '0');
+    if (si && !inclinacion.escuchando) { window.addEventListener('deviceorientation', alInclinar); inclinacion.escuchando = true; }
+    inclinacion.neutra = null;
+    toque.inclinX = 0; toque.inclinY = 0;
+    pintarBotonInclinar();
+    if (conAviso) avisar(si ? 'Inclinación activada: la posición actual es la neutra' : 'Inclinación desactivada', 2500);
+  }
+  // Es un clic (no pointerdown) porque iOS solo concede el permiso del sensor dentro de un clic.
+  $('t-inclinar').addEventListener('click', () => { if (estado === 'vuelo') activarInclinacion(!toque.inclinar, true); });
+
   // Gas: se arrastra arriba y abajo. Es relativo al punto de partida, así un toque no lo cambia de golpe.
   const gas = $('gas'), carrilGas = gas.querySelector('.carril');
   let dedoGas = null, gasInicio = 0, yInicio = 0;
@@ -270,11 +330,73 @@
   }
 
   function pantalla(id) {
-    for (const p of document.querySelectorAll('.pantalla')) p.hidden = p.id !== id;
+    for (const p of document.querySelectorAll('.pantalla')) { p.hidden = p.id !== id; if (!p.hidden) p.scrollTop = 0; }
     $('hud').hidden = id !== null && id !== 'pausa' && id !== 'fin';
   }
 
+  function tarjeta(titulo, nivel, descripcion, datos, alPulsar) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mision';
+    const t = document.createElement('strong'); t.textContent = titulo;
+    const n = document.createElement('span'); n.className = 'nivel'; n.textContent = nivel;
+    const d = document.createElement('p'); d.textContent = descripcion;
+    b.append(t, n, d);
+    if (datos && datos.length) {
+      const fila = document.createElement('div'); fila.className = 'datos';
+      for (const x of datos) { const sp = document.createElement('span'); sp.textContent = x; fila.append(sp); }
+      b.append(fila);
+    }
+    if (alPulsar) b.addEventListener('click', alPulsar); else b.disabled = true;
+    return b;
+  }
+
+  function pintarAerolinea() {
+    const a = aerolinea;
+    $('a-saldo').textContent = AL.dinero(a.saldo);
+    $('a-saldo').classList.toggle('negativo', a.saldo < 0);
+    $('a-reputacion').textContent = a.reputacion + ' / 100';
+    $('a-ubicacion').textContent = AL.PUERTOS[a.ubicacion];
+    $('a-vuelos').textContent = String(a.vuelos);
+    const salidas = $('salidas');
+    salidas.textContent = '';
+    for (const o of AL.salidas(a)) {
+      const avion = AL.FLOTA[o.avion];
+      salidas.append(tarjeta(`${o.hora} · ${o.numero}`, o.clima.nombre, o.nombre,
+        [avion.nombre, `${o.pasajeros}/${avion.plazas} pasajeros`, `${AL.dinero(o.precio)} el billete`],
+        () => empezar(AL.mision(o, F.AVIONES[o.avion].alturaEnTierra, aeropuerto))));
+    }
+    const hangar = $('hangar');
+    hangar.textContent = '';
+    for (const [clave, avion] of Object.entries(AL.FLOTA)) {
+      const tiene = a.flota.includes(clave);
+      let nivel, accion = null;
+      if (tiene && a.avion === clave) nivel = 'En servicio';
+      else if (tiene) { nivel = 'Toca para usarlo'; accion = () => { AL.usar(a, clave); AL.guardar(almacen, a); pintarAerolinea(); }; }
+      else if (a.saldo >= avion.precio) {
+        nivel = `Comprar por ${AL.dinero(avion.precio)}`;
+        accion = () => { if (AL.comprar(a, clave)) { AL.guardar(almacen, a); avisar(`¡Has comprado el ${avion.nombre}!`, 3000); pintarAerolinea(); } };
+      } else nivel = `Cuesta ${AL.dinero(avion.precio)}: te faltan ${AL.dinero(avion.precio - a.saldo)}`;
+      const b = tarjeta(avion.nombre, nivel, avion.descripcion, [`${avion.plazas} plazas`], accion);
+      if (tiene && a.avion === clave) b.classList.add('actual');
+      hangar.append(b);
+    }
+  }
+
+  function elegirPestana(cual) {
+    for (const [tab, panel] of [['tab-aerolinea', 'panel-aerolinea'], ['tab-practica', 'panel-practica']]) {
+      const activa = tab === 'tab-' + cual;
+      $(tab).setAttribute('aria-selected', String(activa));
+      $(panel).hidden = !activa;
+    }
+    guardar('cielo-abierto:pestana', cual);
+  }
+  $('tab-aerolinea').addEventListener('click', () => elegirPestana('aerolinea'));
+  $('tab-practica').addEventListener('click', () => elegirPestana('practica'));
+  elegirPestana(leer('cielo-abierto:pestana') === 'practica' ? 'practica' : 'aerolinea');
+
   function pintarMenu() {
+    pintarAerolinea();
     const lista = $('misiones');
     lista.textContent = '';
     for (const m of window.MISIONES) {
@@ -294,11 +416,14 @@
   function empezar(m) {
     iniciarSonido();
     pantallaCompleta();
+    if (tactil && leer('cielo-abierto:inclinar') === '1' && !inclinacion.escuchando) activarInclinacion(true, false);
+    recalibrar();
     mision = m;
     indicePaso = 0;
     const op = m.inicio;
     pasajeros = P.crear(m.pasajeros || 0);
     e = F.crearEstado(Object.assign({ avion: m.avion }, op, { carga: pasajeros.carga }));
+    combustibleInicial = e.combustible;
     mundo.viento = m.viento;
     mundo.turbulencia = m.turbulencia;
     Object.assign(mando, { acelerador: op.acelerador || 0, cabeceo: 0, alabeo: 0, timon: 0, flaps: op.flapsMando || 0, trim: op.trim || 0, freno: 0 });
@@ -321,7 +446,7 @@
     pantalla(si ? 'pausa' : null);
     $('hud').hidden = false;
     soltarMandos();
-    if (!si) { ultimo = performance.now(); acumulado = 0; }
+    if (!si) { ultimo = performance.now(); acumulado = 0; recalibrar(); }
   }
 
   function pasoActual() { return mision && mision.pasos[indicePaso]; }
@@ -344,7 +469,7 @@
     else $('objetivo').textContent = `Aterriza en ${aeropuerto(p.aeropuerto).nombre} y detente en la pista`;
   }
 
-  function terminar(exito, titulo, detalle, estrellas) {
+  function terminar(exito, titulo, detalle, estrellas, resultado) {
     estado = 'fin';
     if (exito && pasajeros.cantidad) {
       const c = Math.round(pasajeros.comodidad);
@@ -353,10 +478,37 @@
     }
     actualizarSonido(null, false);
     mundo3d.colocarAro(null);
-    if (exito && estrellas > estrellasDe(mision.id)) guardar('cielo-abierto:' + mision.id, String(estrellas));
+    if (!mision.aerolinea && exito && estrellas > estrellasDe(mision.id)) guardar('cielo-abierto:' + mision.id, String(estrellas));
     $('fin-titulo').textContent = titulo;
     $('fin-detalle').textContent = detalle;
     $('fin-estrellas').textContent = exito ? pintaEstrellas(estrellas) : '';
+    const cuentas = $('fin-cuentas');
+    cuentas.hidden = !mision.aerolinea;
+    const llego = resultado === 'ok' || resultado === 'fuera' || (exito && !resultado);
+    $('b-reintentar').hidden = !!mision.aerolinea && llego;
+    $('b-menu-fin').textContent = mision.aerolinea ? 'Ir al tablero de salidas' : 'Elegir otra misión';
+    $('b-reintentar').classList.toggle('principal', !$('b-reintentar').hidden);
+    $('b-menu-fin').classList.toggle('principal', !!mision.aerolinea && llego);
+    if (mision.aerolinea) {
+      const r = AL.liquidar(aerolinea, mision.aerolinea, {
+        resultado: resultado || (exito ? 'ok' : 'choque'), estrellas, comodidad: pasajeros.comodidad,
+        combustible: Math.max(0, combustibleInicial - e.combustible),
+      });
+      AL.guardar(almacen, aerolinea);
+      const cuerpo = cuentas.querySelector('tbody');
+      cuerpo.textContent = '';
+      const fila = (a, b, clase) => {
+        const tr = document.createElement('tr'); if (clase) tr.className = clase;
+        const t1 = document.createElement('td'); t1.textContent = a;
+        const t2 = document.createElement('td'); t2.textContent = b;
+        tr.append(t1, t2); cuerpo.append(tr);
+      };
+      for (const [texto, importe] of r.lineas) fila(texto, AL.dinero(importe));
+      fila('Total del vuelo', AL.dinero(r.total), 'total');
+      const cambio = r.reputacion - r.reputacionAntes;
+      fila(`Reputación ${cambio >= 0 ? '+' : '−'}${Math.abs(cambio)}`, `${r.reputacion} / 100`);
+      fila('Saldo de la aerolínea', AL.dinero(r.saldo));
+    }
     pintarMenu();
     pantalla('fin');
   }
@@ -374,20 +526,24 @@
     const centro = Math.abs(toque.x - a.x);
     const desdeUmbral = a.z + a.mitadLargo - toque.z;
     if (!T.enPista(a, e.p[0], e.p[2])) {
-      terminar(false, 'Fuera de pista', 'Todos están sanos y salvos, pero el avión no se ha detenido en la pista y los pasajeros tendrán que caminar hasta la terminal.', 0);
+      if (Math.hypot(e.p[0] - a.x, e.p[2] - a.z) > 1500) {
+        terminar(false, 'Aterrizaje en el campo', `Todos están bien, pero el avión se ha detenido lejos de ${a.nombre}.`, 0, 'campo');
+      } else {
+        terminar(false, 'Fuera de pista', 'Todos están sanos y salvos, pero el avión no se ha detenido en la pista y los pasajeros tendrán que caminar hasta la terminal.', 0, 'fuera');
+      }
       return;
     }
     let puntos = fpm < 120 ? 50 : fpm < 250 ? 40 : fpm < 400 ? 25 : 10;
     puntos += centro < 5 ? 30 : centro < 15 ? 20 : 5;
     puntos += desdeUmbral > 0 && desdeUmbral < 500 ? 20 : desdeUmbral < 900 ? 10 : 0;
     const estrellas = puntos >= 80 ? 3 : puntos >= 55 ? 2 : 1;
-    terminar(true, 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
+    terminar(true, mision.aerolinea ? `Vuelo ${mision.aerolinea.numero} completado` : 'Aterrizaje completado', `Toque a ${Math.round(fpm)} pies/min, a ${Math.round(centro)} m del eje y ${Math.max(0, Math.round(desdeUmbral))} m tras el umbral. Puntuación: ${puntos}/100.`, estrellas);
   }
 
   function comprobarMision() {
     if (e.estrellado) {
       const [titulo, detalle] = CHOQUES[e.estrellado];
-      terminar(false, titulo, detalle, 0);
+      terminar(false, titulo, detalle + (mision.aerolinea ? ' Por suerte todos salen bien, pero hay que reparar el avión.' : ''), 0, 'choque');
       return;
     }
     const p = pasoActual();
@@ -402,7 +558,7 @@
     if (!hecho) return;
     indicePaso++;
     if (indicePaso >= mision.pasos.length) {
-      terminar(true, 'Misión completada', '¡Buen trabajo! Has alcanzado el objetivo.', 3);
+      terminar(true, 'Misión completada', '¡Buen trabajo! Has alcanzado el objetivo.', 3, 'ok');
       return;
     }
     avisar('Objetivo alcanzado');
@@ -515,7 +671,14 @@
 
   $('b-seguir').addEventListener('click', () => { if (tactil && window.innerHeight > window.innerWidth) return; pausar(false); });
   $('b-reiniciar').addEventListener('click', () => empezar(mision));
-  $('b-menu').addEventListener('click', () => volverMenu());
+  $('b-menu').addEventListener('click', () => {
+    if (mision && mision.aerolinea && estado === 'pausa') {
+      const r = AL.liquidar(aerolinea, mision.aerolinea, { resultado: 'abandono' });
+      AL.guardar(almacen, aerolinea);
+      avisar(`Vuelo cancelado: reputación ${r.reputacion} / 100`, 3000);
+    }
+    volverMenu();
+  });
   $('b-reintentar').addEventListener('click', () => empezar(mision));
   $('b-menu-fin').addEventListener('click', () => volverMenu());
 
@@ -533,7 +696,7 @@
   if (tactil) document.body.classList.add('tactil');
 
   // Enganche de solo lectura para pruebas automáticas.
-  window.__cieloAbierto = { get estado() { return estado; }, get avion() { return e; }, get pasoIndice() { return indicePaso; } };
+  window.__cieloAbierto = { get estado() { return estado; }, get avion() { return e; }, get pasoIndice() { return indicePaso; }, get aerolinea() { return aerolinea; }, get mando() { return mando; } };
 
   ajustar();
   pintarMenu();

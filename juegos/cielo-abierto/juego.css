@@ -15,7 +15,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; col
 #aviso { position: absolute; left: 50%; bottom: calc(var(--alto-panel) + 18px); transform: translateX(-50%); padding: 7px 16px; background: rgba(31, 42, 68, 0.9); font-size: 14px; opacity: 0; transition: opacity 0.25s; }
 #aviso.visible { opacity: 1; }
 
-.pantalla { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(20, 30, 54, 0.45); overflow-y: auto; }
+.pantalla { position: fixed; inset: 0; display: flex; padding: 16px; background: rgba(20, 30, 54, 0.45); overflow-y: auto; }
+.pantalla > .caja { margin: auto; } /* centrado que no corta el contenido cuando no cabe */
 .caja { width: min(400px, 100%); padding: 26px; background: #1f2a44; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
 .caja.ancha { width: min(860px, 100%); }
 .caja h1 { margin: 6px 0 0; font-size: 38px; color: #f7c35f; }
@@ -23,7 +24,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2a44; col
 .sub { margin: 0 0 14px; color: #b9c6dc; }
 .volver { color: #86d3ef; font-size: 14px; text-decoration: none; }
 .volver:hover { text-decoration: underline; }
-#misiones { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.lista-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.pestanas { display: flex; gap: 6px; margin: 12px 0 14px; }
+.pestanas button { padding: 8px 16px; background: #2b3a5c; font-weight: 700; color: #cdd7e8; }
+.pestanas button[aria-selected="true"] { background: #f7c35f; color: #2a1208; }
+.cuentas { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.cuentas div { padding: 9px 12px; background: #2b3a5c; }
+.cuentas span { display: block; font-size: 12px; color: #b9c6dc; }
+.cuentas strong { font-size: 19px; font-variant-numeric: tabular-nums; }
+.negativo { color: #ff8a8a; }
+.titulo-seccion { margin: 18px 0 8px !important; font-size: 19px !important; }
+.nota { margin: 14px 0 0; font-size: 13px; color: #b9c6dc; }
+.mision .datos { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12.5px; color: #f5f1e6; font-variant-numeric: tabular-nums; }
+.mision:disabled { cursor: default; opacity: 0.6; transform: none; }
+.mision.actual { outline: 2px solid #f7c35f; outline-offset: -2px; }
+#fin-cuentas { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+#fin-cuentas td { padding: 4px 0; border-bottom: 1px solid #33415f; }
+#fin-cuentas td:last-child { text-align: right; white-space: nowrap; padding-left: 10px; }
+#fin-cuentas tr.total td { border-bottom: 0; font-weight: 800; color: #f7c35f; padding-top: 8px; }
+.caja:has(#fin-cuentas:not([hidden])) { width: min(480px, 100%); }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 button:focus-visible, a:focus-visible { outline: 3px solid #86d3ef; outline-offset: 2px; }
 .mision { position: relative; text-align: left; padding: 13px 14px; background: #2b3a5c; transition: background 0.15s, transform 0.15s; }
@@ -84,6 +103,16 @@ body.tactil #aviso { font-size: 13px; }
   #palanca { width: 112px; height: 112px; bottom: 8px; }
   #pomo { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
   #mandos-der { bottom: 8px; }
+}
+@media (max-height: 460px) {
+  .pantalla { padding: 8px; }
+  .caja { padding: 16px 20px; }
+  .caja h1 { font-size: 28px; }
+  .estrellas-grandes { font-size: 26px; }
+  #fin-detalle { font-size: 13px; line-height: 1.4; margin: 4px 0; }
+  #fin-cuentas { font-size: 13px; }
+  #fin-cuentas td { padding: 2px 0; }
+  .caja > button { padding: 9px; }
 }
 @media (max-height: 360px) {
   #tactil button { min-height: 32px; }

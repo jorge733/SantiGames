@@ -26,6 +26,7 @@
 
     <div id="tactil" aria-label="Mandos táctiles">
       <div id="botones-sup">
+        <button id="t-inclinar" type="button" aria-pressed="false">Inclinar</button>
         <button id="t-camara" type="button">Cámara</button>
         <button id="t-sonido" type="button">Sonido</button>
         <button id="t-pausa" type="button" aria-label="Pausa">❚❚</button>
@@ -63,13 +64,35 @@
     <div class="caja ancha">
       <a class="volver" href="index.html">← Volver a la ficha del juego</a>
       <h1>Cielo Abierto</h1>
-      <p class="sub">Aerolínea Cielo Abierto · Elige tu vuelo y cuida a tus pasajeros</p>
-      <div id="misiones"></div>
+      <div class="pestanas" role="tablist">
+        <button type="button" role="tab" id="tab-aerolinea" aria-controls="panel-aerolinea">Tu aerolínea</button>
+        <button type="button" role="tab" id="tab-practica" aria-controls="panel-practica">Práctica</button>
+      </div>
+
+      <section id="panel-aerolinea" role="tabpanel" aria-labelledby="tab-aerolinea">
+        <div class="cuentas">
+          <div><span>Saldo</span><strong id="a-saldo"></strong></div>
+          <div><span>Reputación</span><strong id="a-reputacion"></strong></div>
+          <div><span>Estás en</span><strong id="a-ubicacion"></strong></div>
+          <div><span>Vuelos</span><strong id="a-vuelos"></strong></div>
+        </div>
+        <h2 class="titulo-seccion">Salidas</h2>
+        <div id="salidas" class="lista-tarjetas"></div>
+        <h2 class="titulo-seccion">Hangar</h2>
+        <div id="hangar" class="lista-tarjetas"></div>
+        <p class="nota">Más reputación vende más billetes. Los vuelos cómodos dan propinas y los aterrizajes de 3 estrellas, un bono.</p>
+      </section>
+
+      <section id="panel-practica" role="tabpanel" aria-labelledby="tab-practica" hidden>
+        <p class="sub">Misiones para practicar con el Albatros 72</p>
+        <div id="misiones" class="lista-tarjetas"></div>
+      </section>
       <div class="ayuda-tactil">
         <span><b>Palanca</b> Arrastra el dedo en la mitad izquierda: abajo sube el morro, a los lados alabea</span>
         <span><b>Gas</b> Desliza la barra de la derecha hacia arriba o abajo</span>
         <span><b>Timón</b> Mantén pulsado para seguir la línea de la pista</span>
         <span><b>Flaps y frenos</b> Botones a la derecha</span>
+        <span><b>Inclinar</b> Activa el botón y pilota girando el celular como un volante</span>
         <span><b>Consejo</b> Juega con el celular en horizontal</span>
       </div>
       <div class="teclas">
@@ -92,7 +115,7 @@
       <h2>Pausa</h2>
       <button id="b-seguir" class="principal">Seguir volando</button>
       <button id="b-reiniciar">Reiniciar misión</button>
-      <button id="b-menu">Elegir otra misión</button>
+      <button id="b-menu">Salir del vuelo</button>
     </div>
   </section>
 
@@ -101,6 +124,7 @@
       <h2 id="fin-titulo"></h2>
       <p id="fin-estrellas" class="estrellas-grandes"></p>
       <p id="fin-detalle"></p>
+      <table id="fin-cuentas" hidden><tbody></tbody></table>
       <button id="b-reintentar" class="principal">Volver a intentarlo</button>
       <button id="b-menu-fin">Elegir otra misión</button>
     </div>
@@ -112,6 +136,7 @@
   <script src="js/mundo.js"></script>
   <script src="js/instrumentos.js"></script>
   <script src="js/pasajeros.js"></script>
+  <script src="js/aerolinea.js"></script>
   <script src="js/misiones.js"></script>
   <script src="js/juego.js"></script>
 </body>
