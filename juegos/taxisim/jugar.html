@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f2a44">
+  <title>TaxiSim · SantiGames</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="juego.css">
+</head>
+<body>
+  <canvas id="escena" tabindex="0" aria-label="Vista de la ciudad desde arriba"></canvas>
+
+  <div id="hud" hidden>
+    <div class="tablero">
+      <div><span>Caja</span><strong id="h-dinero">$0</strong></div>
+      <div><span>Hora</span><strong id="h-hora">08:00</strong></div>
+      <div><span>Velocidad</span><strong id="h-vel">0 km/h</strong></div>
+      <div><span>Estrellas</span><strong id="h-estrellas">—</strong></div>
+      <div class="ancho"><span>Combustible</span><div class="barra"><i id="h-fuel"></i></div></div>
+    </div>
+    <div id="viaje" hidden>
+      <p id="v-nombre"></p>
+      <p id="v-destino"></p>
+      <div class="taximetro"><span>Taxímetro</span><strong id="v-tarifa">$0</strong></div>
+      <div class="barra tiempo"><i id="v-tiempo"></i></div>
+    </div>
+    <p id="objetivo"></p>
+    <div id="mensaje" role="status"></div>
+    <canvas id="minimapa" aria-label="Mapa de la ciudad"></canvas>
+
+    <div id="tactil" aria-label="Mandos táctiles">
+      <div class="arriba-tactil">
+        <button id="t-bocina" type="button">Bocina</button>
+        <button id="t-sonido" type="button">Sonido</button>
+        <button id="t-pausa" type="button" aria-label="Pausa">❚❚</button>
+      </div>
+      <div class="izq">
+        <button data-tecla="izq" type="button" aria-label="Girar a la izquierda">◀</button>
+        <button data-tecla="der" type="button" aria-label="Girar a la derecha">▶</button>
+      </div>
+      <div class="der">
+        <button data-tecla="freno" type="button" class="freno">Freno</button>
+        <button data-tecla="gas" type="button" class="gas">Gas</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="menu" class="pantalla">
+    <div class="caja">
+      <a class="volver" href="index.html">← Volver a la ficha</a>
+      <h1>TaxiSim</h1>
+      <p class="sub">Un turno de 08:00 a 20:00 en Ciudad Benedetto. Recoge pasajeros, llévalos a tiempo y sin choques, y no te quedes sin combustible.</p>
+      <div class="cuentas">
+        <div><span>Ahorros</span><strong id="m-ahorros">$0</strong></div>
+        <div><span>Mejor turno</span><strong id="m-mejor">—</strong></div>
+        <div><span>Turnos</span><strong id="m-turnos">0</strong></div>
+      </div>
+      <div class="botones">
+        <button id="b-jugar" class="boton principal" type="button">Empezar turno</button>
+        <button id="b-taller" class="boton" type="button">Taller</button>
+      </div>
+      <p class="nota" id="ayuda-teclas">Flechas o WASD para conducir · Espacio frena · H bocina · P pausa · M sonido</p>
+    </div>
+  </div>
+
+  <div id="taller" class="pantalla" hidden>
+    <div class="caja">
+      <h2>Taller</h2>
+      <p class="sub">Mejora tu taxi con los ahorros de tus turnos. Tienes <strong id="t-ahorros">$0</strong>.</p>
+      <div id="mejoras"></div>
+      <div class="botones"><button id="b-volver-taller" class="boton" type="button">Volver</button></div>
+    </div>
+  </div>
+
+  <div id="pausa" class="pantalla" hidden>
+    <div class="caja">
+      <h2>Pausa</h2>
+      <div class="botones">
+        <button id="b-seguir" class="boton principal" type="button">Seguir</button>
+        <button id="b-terminar" class="boton" type="button">Terminar turno</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="fin" class="pantalla" hidden>
+    <div class="caja">
+      <h2>Fin del turno</h2>
+      <p class="sub" id="f-frase"></p>
+      <div class="cuentas" id="f-cuentas"></div>
+      <div class="botones">
+        <button id="b-otra" class="boton principal" type="button">Otro turno</button>
+        <button id="b-menu" class="boton" type="button">Menú</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/juego.js"></script>
+</body>
+</html>
