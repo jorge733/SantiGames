@@ -2,6 +2,8 @@
 
 Sitio web del estudio de videojuegos SantiGames. Los juegos están hechos por Santi con Claude Code.
 
+**Web publicada:** https://santigames.benedettowebs.cl/
+
 ## Verlo en tu ordenador
 
 Abre `index.html` con doble clic. No hace falta instalar nada.
